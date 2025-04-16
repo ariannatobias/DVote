@@ -4,7 +4,7 @@ A Web3-Based Voting Framework with zk-SNARK Privacy on Ethereum
 
 ## DVote Project Timeline
 
-This Gantt chart outlines our 3-week development plan for **DVote: A Web3-Based Voting Framework with zk-SNARK Privacy on Ethereum**, based on project requirements, rubric criteria, and instructor feedback.
+This Gantt chart outlines the full project development plan for **DVote: A Web3-Based Voting Framework with zk-SNARK Privacy on Ethereum**, based on project requirements, rubric criteria, and instructor feedback.
 
 ```mermaid
 
