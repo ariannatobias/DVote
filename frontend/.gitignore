@@ -21,3 +21,7 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Ignore all artifacts except Voting.json
+frontend/src/contract/artifacts/*
+!frontend/src/contract/artifacts/Voting.json

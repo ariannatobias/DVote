@@ -34,3 +34,7 @@ hardhat.log
 # Optional: ignore .next or dist if using other frameworks/tools
 .next/
 dist/
+
+# Ignore all artifacts except Voting.json
+frontend/src/contract/artifacts/*
+!frontend/src/contract/artifacts/Voting.json
