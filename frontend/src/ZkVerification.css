@@ -1,0 +1,304 @@
+/* zk-SNARK Verification Component Styles */
+.zk-verification-container {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    box-shadow: 0 4px 12px var(--shadow);
+    margin-top: 2rem;
+  }
+  
+  .zk-header {
+    margin-bottom: 2rem;
+  }
+  
+  .zk-header h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(to right, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+  }
+  
+  .zk-header p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+  }
+  
+  .zk-content {
+    margin-bottom: 2rem;
+  }
+  
+  .zk-process {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .zk-step {
+    display: flex;
+    align-items: flex-start;
+    background: var(--background);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    transition: var(--transition);
+    position: relative;
+    border-left: 4px solid var(--border);
+  }
+  
+  .zk-step.active {
+    border-left-color: var(--warning);
+    box-shadow: 0 4px 12px rgba(253, 203, 110, 0.2);
+  }
+  
+  .zk-step.completed {
+    border-left-color: var(--success);
+  }
+  
+  .zk-step-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--card-bg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1.2rem;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+  }
+  
+  .zk-step.active .zk-step-icon {
+    color: var(--warning);
+    background: rgba(253, 203, 110, 0.1);
+  }
+  
+  .zk-step.completed .zk-step-icon {
+    color: var(--success);
+    background: rgba(0, 184, 148, 0.1);
+  }
+  
+  .zk-step-content {
+    flex: 1;
+  }
+  
+  .zk-step-content h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .zk-step-content p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+  
+  .zk-loading {
+    position: absolute;
+    right: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  
+  .zk-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 2rem;
+  }
+  
+  .verify-btn {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 0.8rem 2rem;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: var(--transition);
+  }
+  
+  .verify-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+  }
+  
+  .verification-status {
+    display: flex;
+    align-items: center;
+    background: rgba(253, 203, 110, 0.1);
+    padding: 0.8rem 1.5rem;
+    border-radius: var(--border-radius);
+    color: var(--warning);
+  }
+  
+  .verification-status .spin {
+    margin-right: 0.8rem;
+  }
+  
+  .verification-success {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 184, 148, 0.1);
+    padding: 0.8rem 1.5rem;
+    border-radius: var(--border-radius);
+    color: var(--success);
+  }
+  
+  .verification-success svg {
+    margin-right: 0.8rem;
+  }
+  
+  .reset-btn {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 0.9rem;
+    margin-left: 1rem;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  
+  .reset-btn:hover {
+    text-decoration: underline;
+  }
+  
+  .spin {
+    animation: spin 1.5s linear infinite;
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .technical-details-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.8rem;
+    background: var(--background);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+    margin-bottom: 1rem;
+  }
+  
+  .technical-details-toggle:hover {
+    background: rgba(108, 92, 231, 0.1);
+  }
+  
+  .technical-details {
+    background: var(--background);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .technical-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 2rem;
+  }
+  
+  .technical-table th {
+    text-align: left;
+    padding: 1rem;
+    background: rgba(108, 92, 231, 0.1);
+    color: var(--primary);
+    font-size: 0.9rem;
+  }
+  
+  .technical-table th:first-child {
+    border-top-left-radius: var(--border-radius);
+  }
+  
+  .technical-table th:last-child {
+    border-top-right-radius: var(--border-radius);
+  }
+  
+  .technical-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+  }
+  
+  .technical-table .status {
+    font-weight: 600;
+  }
+  
+  .technical-table .status.successful,
+  .technical-table .status.verified,
+  .technical-table .status.complete,
+  .technical-table .status.confirmed {
+    color: var(--success);
+  }
+  
+  .technical-table .hash {
+    font-family: monospace;
+    color: var(--text-secondary);
+  }
+  
+  .zk-explanation {
+    margin-top: 2rem;
+  }
+  
+  .zk-explanation h3 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    color: var(--text);
+  }
+  
+  .zk-explanation p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+    line-height: 1.7;
+  }
+  
+  .zk-example {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    margin-top: 1.5rem;
+  }
+  
+  .zk-example h4 {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    color: var(--primary);
+  }
+  
+  .zk-example ol {
+    padding-left: 1.5rem;
+  }
+  
+  .zk-example li {
+    margin-bottom: 0.8rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+  
+  .zk-example strong {
+    color: var(--text);
+  }
+  
+  @media (max-width: 768px) {
+    .technical-table {
+      display: block;
+      overflow-x: auto;
+    }
+  }
