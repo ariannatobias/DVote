@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
 import { 
   Home, 
   Vote, 
@@ -16,6 +15,7 @@ import {
 import Results from './Results';
 import ZkVerification from './ZkVerification';
 import './DVoteApp.css';
+import { getCandidates, vote } from './contract/votingContract';
 
 function DVoteApp() {
   // State management
@@ -70,67 +70,49 @@ function DVoteApp() {
     document.documentElement.setAttribute('data-theme', newTheme);
   };
   
-  // Simulate fetching elections
   useEffect(() => {
+    const fetchElection = async () => {
+      try {
+        const candidates = await getCandidates();
+        const realElection = {
+          id: 1,
+          title: 'Live Smart Contract Election',
+          status: 'active', // You can make this dynamic if you expose votingStart/votingEnd
+          candidates,
+          totalVoters: 1000, // Hardcoded unless you store this on-chain
+          votedCount: candidates.reduce((sum, c) => sum + c.votes, 0),
+          startTime: new Date().toISOString(), // replace with on-chain if needed
+          endTime: new Date(Date.now() + 2 * 86400000).toISOString()
+        };
+        setElections([realElection]);
+        setActiveElection(realElection);
+      } catch (err) {
+        console.error('Error loading candidates:', err);
+        showNotification('Failed to load candidates from contract', 'error');
+      }
+    };
+  
     if (account && userRole !== 'visitor') {
-      // Mock election data
-      const mockElections = [
-        { 
-          id: 1, 
-          title: 'University Student Council Election', 
-          status: 'active',
-          candidates: [
-            { id: 1, name: 'Alex Johnson', votes: 145, platform: 'Campus Sustainability' },
-            { id: 2, name: 'Maya Rodriguez', votes: 162, platform: 'Academic Reform' },
-            { id: 3, name: 'Taylor Kim', votes: 124, platform: 'Student Wellness' }
-          ],
-          totalVoters: 650,
-          votedCount: 431,
-          startTime: new Date(Date.now() - 86400000).toISOString(),
-          endTime: new Date(Date.now() + 86400000 * 2).toISOString()
-        },
-        { 
-          id: 2, 
-          title: 'Dormitory Representative Election', 
-          status: 'upcoming',
-          candidates: [
-            { id: 1, name: 'Jordan Lee', votes: 0, platform: 'Better Facilities' },
-            { id: 2, name: 'Sam Parker', votes: 0, platform: 'Community Events' }
-          ],
-          totalVoters: 220,
-          votedCount: 0,
-          startTime: new Date(Date.now() + 86400000).toISOString(),
-          endTime: new Date(Date.now() + 86400000 * 5).toISOString()
-        },
-        { 
-          id: 3, 
-          title: 'Department Chair Selection', 
-          status: 'completed',
-          candidates: [
-            { id: 1, name: 'Dr. Rebecca Williams', votes: 32, platform: 'Research Focus' },
-            { id: 2, name: 'Dr. Michael Chen', votes: 28, platform: 'Teaching Excellence' },
-            { id: 3, name: 'Dr. Sarah Johnson', votes: 41, platform: 'Industry Partnerships' }
-          ],
-          totalVoters: 105,
-          votedCount: 101,
-          startTime: new Date(Date.now() - 86400000 * 10).toISOString(),
-          endTime: new Date(Date.now() - 86400000 * 5).toISOString()
-        }
-      ];
-      
-      setElections(mockElections);
-      setActiveElection(mockElections[0]);
+      fetchElection();
     }
   }, [account, userRole]);
   
   // Cast vote function
-  const castVote = async (candidateId) => {
+  const castVote = async (candidateIndex) => {
     if (hasVoted) {
       showNotification('You have already voted in this election', 'warning');
       return;
     }
-    
-    setActiveTab('verification');
+
+    try {
+      await vote(candidateIndex);
+      showNotification('Vote submitted to the blockchain', 'success');
+      setHasVoted(true);
+      setActiveTab('results');
+    } catch (err) {
+      console.error(err);
+      showNotification('Failed to vote. Check console.', 'error');
+    }
   };
   
   // Handle verification complete
@@ -464,7 +446,7 @@ function DVoteApp() {
                         </div>
                         <button 
                           className="cast-vote-btn"
-                          onClick={() => castVote(candidate.id)}
+                        onClick={() => castVote(activeElection.candidates.indexOf(candidate))}
                           disabled={hasVoted}
                         >
                           Vote
