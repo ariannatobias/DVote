@@ -46,37 +46,37 @@ gantt
 
 
 
-  #Week 1 Timeline:
-###Goals: Preparation & Architecture Setup
+# Week 1 Timeline:
+### Goals: Preparation & Architecture Setup
 Background Research & Literature Review
 Project Planning + Specification Draft
 GitHub Repository Setup + Initial Commit
 Define Project Architecture & User Roles
 Finalize Development Environment (Hardhat + React)
 
-###Outcome:
+### Outcome:
 Solid project structure, GitHub initialized.
 Team roles and tech stack locked.
 Ready to begin smart contract development.
 
 
-#Week 2 Timeline:
-###Goals: Smart Contract Core + Frontend Start
+# Week 2 Timeline:
+### Goals: Smart Contract Core + Frontend Start
 Implement Voting Logic + Role-Based Access Control in Solidity.
 Begin zk-SNARK Integration (setup + initial logic).
 Develop Anti-Sybil and Identity Verification Logic.
 Start Web3.js + Smart Contract Integration
 Basic UI Design for Voting and Result Tallying
 
-###Outcome:
+### Outcome:
 Core smart contract logic in place.
 zk-SNARK structure started.
 Functional connection between frontend and smart contract.
 UI scaffolding for user interaction.
 
 
-#Week 3 Timeline:
-###Goals: Testing, Finalization, and Submission
+# Week 3 Timeline:
+### Goals: Testing, Finalization, and Submission
 Contract + UI Testing
 zk-SNARK and Gas Benchmarking
 Final Fixes and Optimizations
@@ -86,7 +86,7 @@ Write Final Report
 Demo Video Recording
 Final Review & Submission ready by May 3
 
-###Outcome:
+### Outcome:
 Fully functional DApp tested on testnet.
 Cleaned and documented repo with deployment.
 Final assets (report + video) prepared and submitted.
