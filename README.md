@@ -1,4 +1,4 @@
-# DVote
+# DVote 
 A Web3-Based Voting Framework with zk-SNARK Privacy on Ethereum
 
 
@@ -43,3 +43,51 @@ gantt
     Final Report Writing                      :e2, 2025-04-29, 4d
     Demo Video Recording                      :e3, 2025-05-02, 2d
     Final Review + Submit                     :e4, 2025-05-04, 1d
+
+
+
+  #Week 1 Timeline:
+###Goals: Preparation & Architecture Setup
+Background Research & Literature Review
+Project Planning + Specification Draft
+GitHub Repository Setup + Initial Commit
+Define Project Architecture & User Roles
+Finalize Development Environment (Hardhat + React)
+
+###Outcome:
+Solid project structure, GitHub initialized.
+Team roles and tech stack locked.
+Ready to begin smart contract development.
+
+
+#Week 2 Timeline:
+###Goals: Smart Contract Core + Frontend Start
+Implement Voting Logic + Role-Based Access Control in Solidity.
+Begin zk-SNARK Integration (setup + initial logic).
+Develop Anti-Sybil and Identity Verification Logic.
+Start Web3.js + Smart Contract Integration
+Basic UI Design for Voting and Result Tallying
+
+###Outcome:
+Core smart contract logic in place.
+zk-SNARK structure started.
+Functional connection between frontend and smart contract.
+UI scaffolding for user interaction.
+
+
+#Week 3 Timeline:
+###Goals: Testing, Finalization, and Submission
+Contract + UI Testing
+zk-SNARK and Gas Benchmarking
+Final Fixes and Optimizations
+Deploy to Ethereum Testnet
+GitHub Cleanup + Documentation (README)
+Write Final Report
+Demo Video Recording
+Final Review & Submission ready by May 3
+
+###Outcome:
+Fully functional DApp tested on testnet.
+Cleaned and documented repo with deployment.
+Final assets (report + video) prepared and submitted.
+
