@@ -47,9 +47,9 @@ gantt
 
 ## Weekly Breakdown
 
-### 📅 Week 1: Preparation & Architecture Setup
+### Week 1 (April 13 - April 19)
 
-**Goals:**
+**Goals:Preparation & Architecture Setup**
 - Background Research & Literature Review  
 - Project Planning + Specification Draft  
 - GitHub Repository Setup + Initial Commit  
@@ -63,9 +63,9 @@ gantt
 
 ---
 
-### 📅 Week 2: Smart Contract Core + Frontend Start
+### Week 2 (April 20 - April 26)
 
-**Goals:**
+**Goals:Smart Contract Core + Frontend Start**
 - Implement Voting Logic + Role-Based Access Control  
 - Begin zk-SNARK Integration  
 - Develop Anti-Sybil and Identity Verification Logic  
@@ -80,9 +80,9 @@ gantt
 
 ---
 
-### 📅 Week 3: Testing, Finalization, and Submission
+### Week 3 (April 27 - May 4)
 
-**Goals:**
+**Goals:Testing, Finalization, and Submission**
 - Contract + UI Testing  
 - zk-SNARK and Gas Benchmarking  
 - Final Fixes and Optimizations  
