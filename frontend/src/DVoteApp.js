@@ -16,8 +16,52 @@ import Results from './Results';
 import ZkVerification from './ZkVerification';
 import './DVoteApp.css';
 import { getCandidates, vote } from './contract/votingContract';
+import { BrowserProvider, Contract, keccak256, toUtf8Bytes } from 'ethers';
+import VotingABI from './contract/artifacts/Voting.json'; // adjust path if needed
+
+// Helper function to add a candidate on chain
+const addCandidateOnChain = async (name, contractAddress, signer) => {
+  const contract = new Contract(contractAddress, VotingABI.abi, signer);
+  const tx = await contract.addCandidate(name);
+  await tx.wait();
+};
+
+// Helper function to start the election on chain
+const startElectionOnChain = async (contractAddress, signer) => {
+  const contract = new Contract(contractAddress, VotingABI.abi, signer);
+  const tx = await contract.startElection();
+  await tx.wait();
+};
 
 function DVoteApp() {
+  // Admin: Start Election handler
+  const handleStartElection = async () => {
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = provider.getSigner();
+      await startElectionOnChain("0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512", signer); // update if needed
+      showNotification('Election started successfully!', 'success');
+    } catch (err) {
+      console.error('Error starting election:', err);
+      showNotification('Failed to start election', 'error');
+    }
+  };
+
+  // Admin: Add Candidate handler
+  const handleAddCandidate = async () => {
+    const candidateName = prompt("Enter the name of the new candidate:");
+    if (!candidateName) return;
+
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = provider.getSigner();
+      await addCandidateOnChain(candidateName, "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512", signer); // update if needed
+      showNotification(`Candidate '${candidateName}' added successfully!`, 'success');
+    } catch (err) {
+      console.error('Error adding candidate:', err);
+      showNotification('Failed to add candidate', 'error');
+    }
+  };
   // State management
   const [account, setAccount] = useState('');
   const [userRole, setUserRole] = useState('visitor');
@@ -37,13 +81,22 @@ function DVoteApp() {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         const account = accounts[0];
         setAccount(account);
-        
-        // Simulate role fetching
-        setTimeout(() => {
+
+        // Check for admin role on contract
+        try {
+          const provider = new BrowserProvider(window.ethereum);
+          const signer = provider.getSigner();
+          // Replace with your deployed contract address:
+          const contract = new Contract("0x5FbDB2315678afecb367f032d93F642f64180aa3", VotingABI.abi, signer); // <-- replace address!
+          const ADMIN_ROLE = keccak256(toUtf8Bytes("ADMIN_ROLE"));
+          const isAdmin = await contract.hasRole(ADMIN_ROLE, account);
+          setUserRole(isAdmin ? 'admin' : 'voter');
+        } catch (err) {
+          console.error('Error fetching user role:', err);
           setUserRole('voter');
-          setLoading(false);
-          showNotification('Wallet connected successfully!', 'success');
-        }, 1000);
+        }
+        setLoading(false);
+        showNotification('Wallet connected successfully!', 'success');
       } else {
         showNotification('Please install MetaMask to use this application', 'error');
         setLoading(false);
@@ -232,6 +285,15 @@ function DVoteApp() {
               <Settings size={18} />
               <span>Settings</span>
             </button>
+            {userRole === 'admin' && (
+              <button 
+                className={`nav-btn ${activeTab === 'admin' ? 'active' : ''}`}
+                onClick={() => setActiveTab('admin')}
+              >
+                <Lock size={18} />
+                <span>Admin</span>
+              </button>
+            )}
           </div>
         )}
         
@@ -548,6 +610,21 @@ function DVoteApp() {
                       </div>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {activeTab === 'admin' && (
+                <div className="admin-section">
+                  <h2>Admin Controls</h2>
+                  <button onClick={handleStartElection}>
+                    Start Election
+                  </button>
+                  <button onClick={handleAddCandidate}>
+                    Add Candidate
+                  </button>
+                  <button onClick={() => showNotification('End Election feature coming soon', 'info')}>
+                    End Election
+                  </button>
                 </div>
               )}
             </div>

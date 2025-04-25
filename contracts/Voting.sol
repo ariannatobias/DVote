@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/AccessControl.sol";
+
 /**
  * Enhancements:
  * - Prevents repeat voting even after disconnection.
@@ -9,7 +11,7 @@ pragma solidity ^0.8.0;
  * - Note: zk-SNARKs not yet implemented. Consider using off-chain identity verification or third-party solutions like BrightID or World ID.
  */
 
-contract Voting {
+contract Voting is AccessControl {
     struct Candidate {
         string name;
         uint256 voteCount;
@@ -17,6 +19,7 @@ contract Voting {
 
     Candidate[] public candidates;
     address owner;
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     mapping(address => bool) public voters;
     mapping(address => bool) public eligibleVoters;
     mapping(address => uint256) public voterToCandidate;
@@ -31,28 +34,29 @@ contract Voting {
                 voteCount: 0
             }));
         }
-        owner = msg.sender;
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(ADMIN_ROLE, msg.sender);
         votingStart = block.timestamp;
         votingEnd = block.timestamp + (_durationInMinutes * 1 minutes);
     }
 
-    modifier onlyOwner {
-        require(msg.sender == owner);
+    modifier onlyAdmin() {
+        require(hasRole(ADMIN_ROLE, msg.sender), "Not an admin");
         _;
     }
 
-    function addCandidate(string memory _name) public onlyOwner {
+    function addCandidate(string memory _name) public onlyAdmin {
         candidates.push(Candidate({
                 name: _name,
                 voteCount: 0
         }));
     }
 
-    function addEligibleVoter(address _voter) public onlyOwner {
+    function addEligibleVoter(address _voter) public onlyAdmin {
         eligibleVoters[_voter] = true;
     }
 
-    function addEligibleVoters(address[] memory _voters) public onlyOwner {
+    function addEligibleVoters(address[] memory _voters) public onlyAdmin {
         for (uint256 i = 0; i < _voters.length; i++) {
             eligibleVoters[_voters[i]] = true;
         }
@@ -89,5 +93,9 @@ contract Voting {
         require(voters[_voter], "This address has not voted.");
         uint256 index = voterToCandidate[_voter];
         return candidates[index].name;
+    }
+    function startElection() public onlyAdmin {
+    votingStart = block.timestamp;
+    votingEnd = block.timestamp + 5 minutes;
     }
 }
