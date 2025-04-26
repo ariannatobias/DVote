@@ -1,0 +1,393 @@
+.admin-container {
+    padding: 2rem;
+    background: var(--card-bg, #ffffff);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin: 1.5rem auto;
+    max-width: 1200px;
+  }
+  
+  .admin-header {
+    margin-bottom: 2rem;
+    text-align: center;
+    position: relative;
+  }
+  
+  .admin-header h2 {
+    font-size: 1.8rem;
+    color: var(--text, #333);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  
+  .admin-header h2::after {
+    content: "";
+    display: block;
+    width: 80px;
+    height: 3px;
+    background: var(--primary, #6366f1);
+    margin: 1rem auto 0;
+    border-radius: 2px;
+  }
+  
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 1rem;
+    padding: 0.3rem 0.8rem;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    gap: 0.4rem;
+  }
+  
+  .status-badge.active {
+    background: rgba(46, 213, 115, 0.1);
+    color: #2ed573;
+  }
+  
+  .status-badge.inactive {
+    background: rgba(255, 159, 67, 0.1);
+    color: #ff9f43;
+  }
+  
+  /* Card Styles */
+  .admin-card {
+    background: var(--background, #f8f9fa);
+    padding: 1.8rem;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border, #eff2f7);
+    margin-bottom: 1.8rem;
+  }
+  
+  .election-info-card {
+    width: 100%;
+    margin-bottom: 1.8rem;
+  }
+  
+  .admin-cards-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.8rem;
+  }
+  
+  .new-election-card {
+    width: 100%;
+  }
+  
+  .new-election-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .date-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+  }
+  
+  .admin-card h3 {
+    font-size: 1.3rem;
+    color: var(--text, #333);
+    margin-bottom: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  
+  .admin-card p {
+    color: var(--text-secondary, #64748b);
+    margin-bottom: 1.2rem;
+  }
+  
+  /* Input Styles */
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+    margin-bottom: 1.2rem;
+  }
+  
+  .input-group label {
+    font-size: 0.9rem;
+    color: var(--text-secondary, #64748b);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  
+  .admin-card input {
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border, #eff2f7);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    color: var(--text, #333);
+    background: var(--input-bg, #ffffff);
+    transition: all 0.2s ease;
+    width: 100%;
+  }
+  
+  .candidate-input {
+    margin-bottom: 1rem;
+  }
+  
+  .admin-card input:focus {
+    outline: none;
+    border-color: var(--primary, #6366f1);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+  }
+  
+  .admin-card input::placeholder {
+    color: var(--text-light, #a0aec0);
+  }
+  
+  /* Button Styles */
+  .primary-button, .secondary-button, .add-candidate-btn, .end-election-btn, .view-candidates-btn, .new-election-btn {
+    padding: 0.9rem 1rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .primary-button {
+    background-color: var(--primary, #6366f1);
+    color: white;
+    box-shadow: 0 2px 4px rgba(99, 102, 241, 0.15);
+  }
+  
+  .secondary-button {
+    background-color: var(--secondary-bg, #f8fafc);
+    color: var(--text, #333);
+    border: 1px solid var(--border, #e2e8f0);
+    margin-top: 0.8rem;
+  }
+  
+  .add-candidate-btn {
+    background-color: var(--primary, #6366f1);
+    color: white;
+    width: 100%;
+  }
+  
+  .end-election-btn {
+    background-color: var(--danger, #ef4444);
+    color: white;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.15);
+    width: 100%;
+    margin-top: 1rem;
+  }
+  
+  .view-candidates-btn {
+    background-color: var(--secondary-bg, #f8fafc);
+    color: var(--text, #333);
+    border: 1px solid var(--border, #e2e8f0);
+    padding: 0.6rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+  }
+  
+  .new-election-btn {
+    background-color: var(--warning-light, rgba(255, 159, 67, 0.1));
+    color: var(--warning, #ff9f43);
+    border: 1px solid var(--warning-border, rgba(255, 159, 67, 0.3));
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
+  
+  .primary-button:hover:not(:disabled), 
+  .add-candidate-btn:hover:not(:disabled),
+  .secondary-button:hover:not(:disabled),
+  .view-candidates-btn:hover:not(:disabled),
+  .new-election-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+  
+  .end-election-btn:hover:not(:disabled) {
+    background-color: var(--danger-dark, #dc2626);
+  }
+  
+  .primary-button:disabled,
+  .add-candidate-btn:disabled,
+  .secondary-button:disabled,
+  .end-election-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  /* Election Timeline and Stats */
+  .election-timeline {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+    margin-bottom: 1.2rem;
+  }
+  
+  .timeline-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.95rem;
+    color: var(--text-secondary, #64748b);
+  }
+  
+  .election-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .meta-stats {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .stat-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    color: var(--text-secondary, #64748b);
+    background: rgba(0, 0, 0, 0.03);
+    padding: 0.6rem 0.8rem;
+    border-radius: 8px;
+  }
+  
+  .scheduled-end {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.95rem;
+    color: var(--text-secondary, #64748b);
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+  
+  /* Candidates Display */
+  .candidates-list {
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+    padding: 1rem;
+    border: 1px solid var(--border, #eff2f7);
+    margin-top: 1rem;
+  }
+  
+  .candidates-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .candidate-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.7rem;
+    border-bottom: 1px solid var(--border, #eff2f7);
+  }
+  
+  .candidate-item:last-child {
+    border-bottom: none;
+  }
+  
+  .candidate-name {
+    font-weight: 500;
+  }
+  
+  .candidate-votes {
+    color: var(--text-secondary, #64748b);
+    font-size: 0.9rem;
+  }
+  
+  .no-candidates {
+    color: var(--text-secondary, #64748b);
+    font-style: italic;
+    margin: 0.5rem 0;
+  }
+  
+  /* Added Candidates */
+  .added-candidates {
+    margin-top: 1.5rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--border, #eff2f7);
+  }
+  
+  .added-candidates p {
+    font-size: 0.95rem;
+    color: var(--text-secondary, #64748b);
+    margin-bottom: 0.7rem;
+  }
+  
+  .candidate-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .candidate-chip {
+    background: var(--primary-light, rgba(99, 102, 241, 0.1));
+    color: var(--primary, #6366f1);
+    padding: 0.5rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  
+  .cancel-btn {
+    margin-top: 0;
+  }
+  
+  @media (max-width: 768px) {
+    .admin-container {
+      padding: 1.5rem;
+    }
+    
+    .admin-cards-container {
+      grid-template-columns: 1fr;
+    }
+    
+    .date-inputs {
+      grid-template-columns: 1fr;
+    }
+    
+    .election-timeline {
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+    
+    .election-meta {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    
+    .meta-stats {
+      flex-wrap: wrap;
+    }
+    
+    .new-election-btn {
+      width: 100%;
+    }
+  }

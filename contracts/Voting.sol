@@ -3,99 +3,92 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
-/**
- * Enhancements:
- * - Prevents repeat voting even after disconnection.
- * - Tracks and allows retrieval of the candidate a voter voted for.
- * - Requires voters to be on a pre-approved eligible list to prevent Sybil attacks.
- * - Note: zk-SNARKs not yet implemented. Consider using off-chain identity verification or third-party solutions like BrightID or World ID.
- */
-
 contract Voting is AccessControl {
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+
     struct Candidate {
         string name;
-        uint256 voteCount;
+        uint256 votes;
     }
 
-    Candidate[] public candidates;
-    address owner;
-    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    mapping(address => bool) public voters;
-    mapping(address => bool) public eligibleVoters;
-    mapping(address => uint256) public voterToCandidate;
+    struct Election {
+        string name;
+        bool active;
+        uint256 startTime;
+        uint256 endTime;
+        Candidate[] candidates;
+        mapping(address => bool) eligibleVoters;
+        mapping(address => bool) hasVoted;
+    }
 
-    uint256 public votingStart;
-    uint256 public votingEnd;
+    uint256 public nextElectionId;
+    mapping(uint256 => Election) public elections;
+    mapping(string => bool) public usedElectionNames; // <-- NEW
 
-    constructor(string[] memory _candidateNames, uint256 _durationInMinutes) {
-        for (uint256 i = 0; i < _candidateNames.length; i++) {
-            candidates.push(Candidate({
-                name: _candidateNames[i],
-                voteCount: 0
-            }));
-        }
+    constructor() {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(ADMIN_ROLE, msg.sender);
-        votingStart = block.timestamp;
-        votingEnd = block.timestamp + (_durationInMinutes * 1 minutes);
     }
 
-    modifier onlyAdmin() {
-        require(hasRole(ADMIN_ROLE, msg.sender), "Not an admin");
-        _;
+    function startElection(string memory _name) public onlyRole(ADMIN_ROLE) {
+        require(!usedElectionNames[_name], "Election name already used"); // <-- CHECK
+        Election storage newElection = elections[nextElectionId];
+        newElection.name = _name;
+        newElection.active = true;
+        newElection.startTime = block.timestamp;
+        usedElectionNames[_name] = true; // <-- MARK AS USED
+        nextElectionId++;
     }
 
-    function addCandidate(string memory _name) public onlyAdmin {
-        candidates.push(Candidate({
-                name: _name,
-                voteCount: 0
-        }));
+    function endElection(uint256 electionId) public onlyRole(ADMIN_ROLE) {
+        require(elections[electionId].active, "Election not active");
+        elections[electionId].active = false;
+        elections[electionId].endTime = block.timestamp;
     }
 
-    function addEligibleVoter(address _voter) public onlyAdmin {
-        eligibleVoters[_voter] = true;
+    function addCandidate(uint256 electionId, string memory _name) public onlyRole(ADMIN_ROLE) {
+        require(elections[electionId].active, "Election not active");
+        elections[electionId].candidates.push(Candidate({name: _name, votes: 0}));
     }
 
-    function addEligibleVoters(address[] memory _voters) public onlyAdmin {
-        for (uint256 i = 0; i < _voters.length; i++) {
-            eligibleVoters[_voters[i]] = true;
+    function addEligibleVoter(uint256 electionId, address _voter) public onlyRole(ADMIN_ROLE) {
+        elections[electionId].eligibleVoters[_voter] = true;
+    }
+
+    function vote(uint256 electionId, uint candidateIndex) public {
+        Election storage election = elections[electionId];
+        require(election.active, "Election is not active");
+        require(election.eligibleVoters[msg.sender], "Not eligible to vote");
+        require(!election.hasVoted[msg.sender], "Already voted");
+        require(candidateIndex < election.candidates.length, "Invalid candidate");
+
+        election.candidates[candidateIndex].votes++;
+        election.hasVoted[msg.sender] = true;
+    }
+
+    function getAllVotesOfCandidates(uint256 electionId) public view returns (string[] memory, uint256[] memory) {
+        Election storage election = elections[electionId];
+        uint256 len = election.candidates.length;
+        string[] memory names = new string[](len);
+        uint256[] memory votes = new uint256[](len);
+
+        for (uint256 i = 0; i < len; i++) {
+            names[i] = election.candidates[i].name;
+            votes[i] = election.candidates[i].votes;
         }
+        return (names, votes);
+    }
+    function getAllElections() public view returns (uint256[] memory, string[] memory, bool[] memory) {
+    uint256[] memory ids = new uint256[](nextElectionId);
+    string[] memory names = new string[](nextElectionId);
+    bool[] memory statuses = new bool[](nextElectionId);
+
+    for (uint256 i = 0; i < nextElectionId; i++) {
+        ids[i] = i;
+        names[i] = elections[i].name;
+        statuses[i] = elections[i].active;
     }
 
-    function vote(uint256 _candidateIndex) public {
-        require(block.timestamp >= votingStart && block.timestamp < votingEnd, "Voting is not active.");
-        require(!voters[msg.sender], "You have already voted.");
-        require(_candidateIndex < candidates.length, "Invalid candidate index.");
-        require(eligibleVoters[msg.sender], "You are not eligible to vote.");
-
-        candidates[_candidateIndex].voteCount++;
-        voters[msg.sender] = true;
-        voterToCandidate[msg.sender] = _candidateIndex;
-    }
-
-    function getAllVotesOfCandiates() public view returns (Candidate[] memory){
-        return candidates;
-    }
-
-    function getVotingStatus() public view returns (bool) {
-        return (block.timestamp >= votingStart && block.timestamp < votingEnd);
-    }
-
-    function getRemainingTime() public view returns (uint256) {
-        require(block.timestamp >= votingStart, "Voting has not started yet.");
-        if (block.timestamp >= votingEnd) {
-            return 0;
-        }
-        return votingEnd - block.timestamp;
-    }
-
-    function getVotedCandidate(address _voter) public view returns (string memory) {
-        require(voters[_voter], "This address has not voted.");
-        uint256 index = voterToCandidate[_voter];
-        return candidates[index].name;
-    }
-    function startElection() public onlyAdmin {
-    votingStart = block.timestamp;
-    votingEnd = block.timestamp + 5 minutes;
-    }
+    return (ids, names, statuses);
+}
 }

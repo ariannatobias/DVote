@@ -15,53 +15,13 @@ import {
 import Results from './Results';
 import ZkVerification from './ZkVerification';
 import './DVoteApp.css';
-import { getCandidates, vote } from './contract/votingContract';
+import { getContract, getCandidates, getAllElections, vote as castVoteOnChain } from './contract/votingContract';
+import contractAddressJson from './contract/contract-address.json';
 import { BrowserProvider, Contract, keccak256, toUtf8Bytes } from 'ethers';
 import VotingABI from './contract/artifacts/Voting.json'; // adjust path if needed
-
-// Helper function to add a candidate on chain
-const addCandidateOnChain = async (name, contractAddress, signer) => {
-  const contract = new Contract(contractAddress, VotingABI.abi, signer);
-  const tx = await contract.addCandidate(name);
-  await tx.wait();
-};
-
-// Helper function to start the election on chain
-const startElectionOnChain = async (contractAddress, signer) => {
-  const contract = new Contract(contractAddress, VotingABI.abi, signer);
-  const tx = await contract.startElection();
-  await tx.wait();
-};
+import AdminPanel from './AdminPanel';
 
 function DVoteApp() {
-  // Admin: Start Election handler
-  const handleStartElection = async () => {
-    try {
-      const provider = new BrowserProvider(window.ethereum);
-      const signer = provider.getSigner();
-      await startElectionOnChain("0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512", signer); // update if needed
-      showNotification('Election started successfully!', 'success');
-    } catch (err) {
-      console.error('Error starting election:', err);
-      showNotification('Failed to start election', 'error');
-    }
-  };
-
-  // Admin: Add Candidate handler
-  const handleAddCandidate = async () => {
-    const candidateName = prompt("Enter the name of the new candidate:");
-    if (!candidateName) return;
-
-    try {
-      const provider = new BrowserProvider(window.ethereum);
-      const signer = provider.getSigner();
-      await addCandidateOnChain(candidateName, "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512", signer); // update if needed
-      showNotification(`Candidate '${candidateName}' added successfully!`, 'success');
-    } catch (err) {
-      console.error('Error adding candidate:', err);
-      showNotification('Failed to add candidate', 'error');
-    }
-  };
   // State management
   const [account, setAccount] = useState('');
   const [userRole, setUserRole] = useState('visitor');
@@ -78,18 +38,19 @@ function DVoteApp() {
     try {
       setLoading(true);
       if (window.ethereum) {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const account = accounts[0];
+        const provider = new BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const account = await signer.getAddress();
         setAccount(account);
 
-        // Check for admin role on contract
         try {
-          const provider = new BrowserProvider(window.ethereum);
-          const signer = provider.getSigner();
-          // Replace with your deployed contract address:
-          const contract = new Contract("0x5FbDB2315678afecb367f032d93F642f64180aa3", VotingABI.abi, signer); // <-- replace address!
+          // Use contract address from contract-address.json:
+          const contract = new Contract(contractAddressJson.Voting, VotingABI.abi, signer);
           const ADMIN_ROLE = keccak256(toUtf8Bytes("ADMIN_ROLE"));
           const isAdmin = await contract.hasRole(ADMIN_ROLE, account);
+          console.log("Connected account:", account);
+          console.log("ADMIN_ROLE hash:", ADMIN_ROLE);
+          console.log("hasRole result:", isAdmin);
           setUserRole(isAdmin ? 'admin' : 'voter');
         } catch (err) {
           console.error('Error fetching user role:', err);
@@ -124,29 +85,46 @@ function DVoteApp() {
   };
   
   useEffect(() => {
-    const fetchElection = async () => {
+    const fetchElections = async () => {
       try {
-        const candidates = await getCandidates();
-        const realElection = {
-          id: 1,
-          title: 'Live Smart Contract Election',
-          status: 'active', // You can make this dynamic if you expose votingStart/votingEnd
-          candidates,
-          totalVoters: 1000, // Hardcoded unless you store this on-chain
-          votedCount: candidates.reduce((sum, c) => sum + c.votes, 0),
-          startTime: new Date().toISOString(), // replace with on-chain if needed
-          endTime: new Date(Date.now() + 2 * 86400000).toISOString()
-        };
-        setElections([realElection]);
-        setActiveElection(realElection);
+        const provider = new BrowserProvider(window.ethereum);
+        const electionsFromContract = await getAllElections(provider);
+
+        const electionsWithCandidates = await Promise.all(
+          electionsFromContract.map(async (election) => {
+            const contract = getContract(provider);
+            const [names, votes] = await getCandidates(contract, election.id);
+
+            const candidates = names.map((name, index) => ({
+              id: index,
+              name: name,
+              votes: votes[index].toNumber(),
+              platform: "" // placeholder
+            }));
+
+            return {
+              ...election,
+              candidates,
+              totalVoters: 1000,
+              votedCount: candidates.reduce((sum, c) => sum + c.votes, 0),
+              startTime: new Date().toISOString(),
+              endTime: new Date(Date.now() + 2 * 86400000).toISOString()
+            };
+          })
+        );
+
+        setElections(electionsWithCandidates);
+        if (electionsWithCandidates.length > 0) {
+          setActiveElection(electionsWithCandidates[0]);
+        }
       } catch (err) {
-        console.error('Error loading candidates:', err);
-        showNotification('Failed to load candidates from contract', 'error');
+        console.error('Error loading elections:', err);
+        showNotification('Failed to load elections from contract', 'error');
       }
     };
-  
+
     if (account && userRole !== 'visitor') {
-      fetchElection();
+      fetchElections();
     }
   }, [account, userRole]);
   
@@ -158,7 +136,9 @@ function DVoteApp() {
     }
 
     try {
-      await vote(candidateIndex);
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      await castVoteOnChain(activeElection.id, candidateIndex, signer);
       showNotification('Vote submitted to the blockchain', 'success');
       setHasVoted(true);
       setActiveTab('results');
@@ -401,7 +381,7 @@ function DVoteApp() {
         ) : (
           <div className="page-container">
             {/* Elections Selector */}
-            {elections.length > 0 && (
+            {elections.length > 0 ? (
               <div className="elections-selector">
                 <h3>Select Election</h3>
                 <div className="elections-scroll">
@@ -419,6 +399,11 @@ function DVoteApp() {
                     </div>
                   ))}
                 </div>
+              </div>
+            ) : (
+              <div className="no-elections-message">
+                <h3>No elections available yet</h3>
+                <p>Please check back later.</p>
               </div>
             )}
             
@@ -551,7 +536,9 @@ function DVoteApp() {
                     </div>
                     <div className="setting-item">
                       <span className="setting-label">Network</span>
-                      <span className="setting-value">Ethereum (Goerli Testnet)</span>
+                      <span className="setting-value">
+                        {window.ethereum.networkVersion === "31337" ? "Localhost (Hardhat)" : "Unknown Network"}
+                      </span>
                     </div>
                     <button className="disconnect-btn" onClick={disconnectWallet}>
                       Disconnect Wallet
@@ -614,18 +601,7 @@ function DVoteApp() {
               )}
 
               {activeTab === 'admin' && (
-                <div className="admin-section">
-                  <h2>Admin Controls</h2>
-                  <button onClick={handleStartElection}>
-                    Start Election
-                  </button>
-                  <button onClick={handleAddCandidate}>
-                    Add Candidate
-                  </button>
-                  <button onClick={() => showNotification('End Election feature coming soon', 'info')}>
-                    End Election
-                  </button>
-                </div>
+                <AdminPanel showNotification={showNotification} />
               )}
             </div>
           </div>

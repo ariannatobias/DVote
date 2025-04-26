@@ -1,30 +1,41 @@
 import { ethers } from 'ethers';
-import { CONTRACT_ADDRESS } from './contractMeta';
-import contractABI from './artifacts/Voting.json';
+import VotingABI from '../contract/artifacts/Voting.json';
+import contractAddress from '../contract/contract-address.json';
 
-const getContract = async () => {
-  if (typeof window.ethereum === 'undefined') {
-    throw new Error('MetaMask not detected');
+export const getContract = (signerOrProvider) => {
+  return new ethers.Contract(contractAddress.Voting, VotingABI.abi, signerOrProvider);
+};
+
+export const getCandidates = async (contract, electionId) => {
+  try {
+    const candidates = await contract.getAllVotesOfCandidates(electionId);
+    return candidates;
+  } catch (error) {
+    console.error('Error fetching candidates:', error);
+    throw error;
   }
-
-  const provider = new ethers.BrowserProvider(window.ethereum);
-  const signer = await provider.getSigner();
-  return new ethers.Contract(CONTRACT_ADDRESS, contractABI.abi, signer);
 };
 
-export const getCandidates = async () => {
-  const contract = await getContract();
-  const candidates = await contract.getAllVotesOfCandiates();
-  return candidates.map((c, index) => ({
-    id: index,
-    name: c.name,
-    votes: c.voteCount.toNumber(),
-    platform: 'TBD',
-  }));
+export const getAllElections = async (signerOrProvider) => {
+  const contract = getContract(signerOrProvider);
+  try {
+    const [ids, names, statuses] = await contract.getAllElections();
+
+    const elections = ids.map((id, index) => ({
+      id: id.toNumber(),
+      title: names[index],
+      status: statuses[index] ? 'active' : 'completed',
+    }));
+
+    return elections;
+  } catch (error) {
+    console.error('Error fetching elections:', error);
+    throw error;
+  }
 };
 
-export const vote = async (candidateIndex) => {
-  const contract = await getContract();
-  const tx = await contract.vote(candidateIndex);
+export const vote = async (electionId, candidateId, signer) => {
+  const contract = getContract(signer);
+  const tx = await contract.vote(electionId, candidateId);
   await tx.wait();
 };

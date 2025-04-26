@@ -1,13 +1,27 @@
-const hre = require("hardhat");
+const { ethers } = require("hardhat");
+const fs = require("fs");
+const path = require("path");
 
 async function main() {
-  const Voting = await hre.ethers.getContractFactory("Voting");
+  const Voting = await ethers.getContractFactory("Voting");
 
-  const candidateNames = ["Alice", "Bob", "Charlie"];
-  const durationInMinutes = 10;
+  const voting = await Voting.deploy();
 
-  const voting = await Voting.deploy(candidateNames, durationInMinutes);
-  console.log(`Voting contract deployed to: ${voting.target}`);
+  console.log("Voting contract deployed to:", voting.target); // ethers v6 uses .target
+
+  // Save the deployed address to frontend
+  const frontendContractsDir = path.join(__dirname, "..", "frontend", "src", "contract");
+
+  if (!fs.existsSync(frontendContractsDir)) {
+    fs.mkdirSync(frontendContractsDir, { recursive: true });
+  }
+
+  fs.writeFileSync(
+    path.join(frontendContractsDir, "contract-address.json"),
+    JSON.stringify({ Voting: voting.target }, null, 2)
+  );
+
+  console.log("Contract address saved to frontend/src/contract/contract-address.json");
 }
 
 main().catch((error) => {
