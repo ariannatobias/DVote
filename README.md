@@ -1,6 +1,40 @@
 # DVote 
 A Web3-Based Voting Framework with zk-SNARK Privacy on Ethereum
 
+## Running as Admin (Local Setup)
+
+Follow these steps to run the DVote app and access admin features locally:
+
+### 1. Start the Local Ethereum Node
+From the root directory of the project:
+```bash
+npx hardhat node
+```
+
+This will launch a local blockchain and show a list of accounts and private keys.
+
+### 2. Deploy the Contract to Localhost
+In a separate terminal:
+```bash
+npx hardhat run scripts/deploy.js --network localhost
+```
+
+This deploys the contract using the first account listed in the node output (Account #0).
+
+### 3. Import Admin Account into MetaMask
+- Copy the **private key** of Account #0 from the terminal output.
+- In MetaMask, go to *Import Account* and paste the private key.
+- Switch the MetaMask network to **Localhost 8545**.
+
+### 4. Start the Frontend
+From the `frontend` directory:
+```bash
+npm install
+npm start
+```
+
+Open your browser to `http://localhost:3000` and connect MetaMask using the admin account. You should now have access to all admin features including starting and managing elections.
+
 ## DVote Project Timeline
 
 This Gantt chart outlines the full project development plan for **DVote: A Web3-Based Voting Framework with zk-SNARK Privacy on Ethereum**, based on project requirements, rubric criteria, and instructor feedback.
@@ -42,7 +76,6 @@ gantt
     Demo Video Recording                      :e3, 2025-05-02, 2d
     Final Review + Submit                     :e4, 2025-05-04, 1d
 ```
-
 ---
 
 ## Weekly Breakdown
