@@ -15,7 +15,7 @@ import {
 import Results from './Results';
 import ZkVerification from './ZkVerification';
 import './DVoteApp.css';
-import { getContract, getCandidates, getAllElections, vote as castVoteOnChain } from './contract/votingContract';
+import { getContract, getCandidates, getAllElections, getActiveElections, vote as castVoteOnChain } from './contract/votingContract';
 import contractAddressJson from './contract/contract-address.json';
 import { BrowserProvider, Contract, keccak256, toUtf8Bytes } from 'ethers';
 import VotingABI from './contract/artifacts/Voting.json'; // adjust path if needed
@@ -88,27 +88,34 @@ function DVoteApp() {
     const fetchElections = async () => {
       try {
         const provider = new BrowserProvider(window.ethereum);
-        const electionsFromContract = await getAllElections(provider);
+        const electionsFromContract = await getActiveElections(provider);
+
+        console.log("Fetched Active Elections:", electionsFromContract);
 
         const electionsWithCandidates = await Promise.all(
           electionsFromContract.map(async (election) => {
+            const { id, title } = election;
             const contract = getContract(provider);
-            const [names, votes] = await getCandidates(contract, election.id);
+            const [names, votes] = await getCandidates(contract, id);
 
-            const candidates = names.map((name, index) => ({
-              id: index,
+            const candidates = names.map((name, i) => ({
+              id: i,
               name: name,
-              votes: votes[index].toNumber(),
-              platform: "" // placeholder
+              votes: typeof votes[i]?.toNumber === 'function'
+                ? votes[i].toNumber()
+                : Number(votes[i]) || 0,
+              platform: ""
             }));
 
             return {
-              ...election,
+              id: Number(id),
+              title,
               candidates,
               totalVoters: 1000,
               votedCount: candidates.reduce((sum, c) => sum + c.votes, 0),
               startTime: new Date().toISOString(),
-              endTime: new Date(Date.now() + 2 * 86400000).toISOString()
+              endTime: new Date(Date.now() + 2 * 86400000).toISOString(),
+              status: 'active'
             };
           })
         );
@@ -600,9 +607,41 @@ function DVoteApp() {
                 </div>
               )}
 
-              {activeTab === 'admin' && (
-                <AdminPanel showNotification={showNotification} />
-              )}
+            {activeTab === 'admin' && (
+              <AdminPanel 
+                showNotification={showNotification}
+                refreshElections={async () => {
+                  const provider = new BrowserProvider(window.ethereum);
+                  const electionsFromContract = await getAllElections(provider);
+                  const electionsWithCandidates = await Promise.all(
+                    electionsFromContract.map(async (election) => {
+                      const contract = getContract(provider);
+                      const [names, votes] = await getCandidates(contract, election.id);
+                      const candidates = names.map((name, index) => ({
+                        id: index,
+                        name,
+                        votes: typeof votes[index]?.toNumber === 'function'
+                          ? votes[index].toNumber()
+                          : Number(votes[index]) || 0,
+                        platform: ""
+                      }));
+                      const status = election.active ? 'active' : 'completed';
+                      return {
+                        ...election,
+                        candidates,
+                        totalVoters: 1000,
+                        votedCount: candidates.reduce((sum, c) => sum + c.votes, 0),
+                        startTime: new Date().toISOString(),
+                        endTime: new Date(Date.now() + 2 * 86400000).toISOString(),
+                        status
+                      };
+                    })
+                  );
+                  setElections(electionsWithCandidates);
+                  setActiveElection(electionsWithCandidates[0]);
+                }}
+              />
+            )}
             </div>
           </div>
         )}

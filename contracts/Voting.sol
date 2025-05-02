@@ -23,20 +23,21 @@ contract Voting is AccessControl {
 
     uint256 public nextElectionId;
     mapping(uint256 => Election) public elections;
-    mapping(string => bool) public usedElectionNames; // <-- NEW
+    mapping(string => bool) public usedElectionNames;
 
     constructor() {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(ADMIN_ROLE, msg.sender);
     }
 
+    // Election lifecycle
     function startElection(string memory _name) public onlyRole(ADMIN_ROLE) {
-        require(!usedElectionNames[_name], "Election name already used"); // <-- CHECK
+        require(!usedElectionNames[_name], "Election name already used");
         Election storage newElection = elections[nextElectionId];
         newElection.name = _name;
         newElection.active = true;
         newElection.startTime = block.timestamp;
-        usedElectionNames[_name] = true; // <-- MARK AS USED
+        usedElectionNames[_name] = true;
         nextElectionId++;
     }
 
@@ -46,11 +47,13 @@ contract Voting is AccessControl {
         elections[electionId].endTime = block.timestamp;
     }
 
+    // Candidate management
     function addCandidate(uint256 electionId, string memory _name) public onlyRole(ADMIN_ROLE) {
         require(elections[electionId].active, "Election not active");
         elections[electionId].candidates.push(Candidate({name: _name, votes: 0}));
     }
 
+    // Voter management
     function addEligibleVoter(uint256 electionId, address _voter) public onlyRole(ADMIN_ROLE) {
         elections[electionId].eligibleVoters[_voter] = true;
     }
@@ -66,6 +69,7 @@ contract Voting is AccessControl {
         election.hasVoted[msg.sender] = true;
     }
 
+    // View functions
     function getAllVotesOfCandidates(uint256 electionId) public view returns (string[] memory, uint256[] memory) {
         Election storage election = elections[electionId];
         uint256 len = election.candidates.length;
@@ -78,17 +82,48 @@ contract Voting is AccessControl {
         }
         return (names, votes);
     }
-    function getAllElections() public view returns (uint256[] memory, string[] memory, bool[] memory) {
-    uint256[] memory ids = new uint256[](nextElectionId);
-    string[] memory names = new string[](nextElectionId);
-    bool[] memory statuses = new bool[](nextElectionId);
 
-    for (uint256 i = 0; i < nextElectionId; i++) {
-        ids[i] = i;
-        names[i] = elections[i].name;
-        statuses[i] = elections[i].active;
+    function getAllElections() public view returns (uint256[] memory, string[] memory, bool[] memory) {
+        uint256[] memory ids = new uint256[](nextElectionId);
+        string[] memory names = new string[](nextElectionId);
+        bool[] memory statuses = new bool[](nextElectionId);
+
+        for (uint256 i = 0; i < nextElectionId; i++) {
+            ids[i] = i;
+            names[i] = elections[i].name;
+            statuses[i] = elections[i].active;
+        }
+
+        return (ids, names, statuses);
     }
 
-    return (ids, names, statuses);
-}
+    function votingActive() public view returns (bool) {
+        if (nextElectionId == 0) return false;
+        Election storage latest = elections[nextElectionId - 1];
+        return latest.active;
+    }
+
+    function getActiveElections() public view returns (uint256[] memory, string[] memory) {
+        uint256 activeCount = 0;
+
+        for (uint256 i = 0; i < nextElectionId; i++) {
+            if (elections[i].active) {
+                activeCount++;
+            }
+        }
+
+        uint256[] memory ids = new uint256[](activeCount);
+        string[] memory names = new string[](activeCount);
+        uint256 index = 0;
+
+        for (uint256 i = 0; i < nextElectionId; i++) {
+            if (elections[i].active) {
+                ids[index] = i;
+                names[index] = elections[i].name;
+                index++;
+            }
+        }
+
+        return (ids, names);
+    }
 }
