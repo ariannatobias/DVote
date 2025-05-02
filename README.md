@@ -1,6 +1,41 @@
 # DVote
 A Web3-Based Voting Framework with zk-SNARK Privacy on Ethereum
 
+---
+
+## Running as Admin (Local Setup)
+
+Follow these steps to run the DVote app and access admin features locally:
+
+### 1. Start the Local Ethereum Node
+From the root directory of the project:
+```bash
+npx hardhat node
+```
+
+This will launch a local blockchain and show a list of accounts and private keys.
+
+### 2. Deploy the Contract to Localhost
+In a separate terminal:
+```bash
+npx hardhat run scripts/deploy.js --network localhost
+```
+
+This deploys the contract using the first account listed in the node output (Account #0).
+
+### 3. Import Admin Account into MetaMask
+- Copy the **private key** of Account #0 from the terminal output.
+- In MetaMask, go to *Import Account* and paste the private key.
+- Switch the MetaMask network to **Localhost 8545**.
+
+### 4. Start the Frontend
+From the `frontend` directory:
+```bash
+npm install
+npm start
+```
+
+Open your browser to `http://localhost:3000` and connect MetaMask using the admin account. You should now have access to all admin features including starting and managing elections.
 
 ## DVote Project Timeline
 
@@ -43,3 +78,55 @@ gantt
     Final Report Writing                      :e2, 2025-04-29, 4d
     Demo Video Recording                      :e3, 2025-05-02, 2d
     Final Review + Submit                     :e4, 2025-05-04, 1d
+```
+---
+
+## Weekly Breakdown
+
+### Week 1 (April 13 - April 19)
+
+**Goals:Preparation & Architecture Setup**
+- Background Research & Literature Review  
+- Project Planning + Specification Draft  
+- GitHub Repository Setup + Initial Commit  
+- Define Project Architecture & User Roles  
+- Finalize Development Environment (Hardhat + React)  
+
+**Outcome:**
+- Solid project structure, GitHub initialized  
+- Team roles and tech stack locked  
+- Ready to begin smart contract development  
+
+---
+
+### Week 2 (April 20 - April 26)
+
+**Goals:Smart Contract Core + Frontend Start**
+- Implement Voting Logic + Role-Based Access Control  
+- Begin zk-SNARK Integration  
+- Develop Anti-Sybil and Identity Verification Logic  
+- Start Web3.js + Smart Contract Integration  
+- Basic UI Design for Voting and Result Tallying  
+
+**Outcome:**
+- Core smart contract logic in place  
+- zk-SNARK structure started  
+- Functional frontend-to-contract connection  
+- UI scaffolding implemented  
+
+---
+
+### Week 3 (April 27 - May 4)
+
+**Goals:Testing, Finalization, and Submission**
+- Contract + UI Testing  
+- zk-SNARK and Gas Benchmarking  
+- Final Fixes and Optimizations  
+- Deploy to Ethereum Testnet  
+- GitHub Cleanup + Documentation  
+- Final Report & Demo Video  
+
+**Outcome:**
+- Fully functional DApp tested and deployed  
+- Repo cleaned and documented  
+- Final deliverables ready for submission  
