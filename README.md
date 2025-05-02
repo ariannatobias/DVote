@@ -1,7 +1,5 @@
-# DVote
+# DVote 
 A Web3-Based Voting Framework with zk-SNARK Privacy on Ethereum
-
----
 
 ## Running as Admin (Local Setup)
 
@@ -42,7 +40,6 @@ Open your browser to `http://localhost:3000` and connect MetaMask using the admi
 This Gantt chart outlines the full project development plan for **DVote: A Web3-Based Voting Framework with zk-SNARK Privacy on Ethereum**, based on project requirements, rubric criteria, and instructor feedback.
 
 ```mermaid
-
 gantt
     title DVote Project Timeline
     dateFormat  YYYY-MM-DD
