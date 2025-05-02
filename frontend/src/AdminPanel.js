@@ -18,7 +18,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 
-function AdminPanel({ showNotification }) {
+function AdminPanel({ showNotification, refreshElections }) {
   const [candidateName, setCandidateName] = useState('');
   const [electionStarted, setElectionStarted] = useState(false);
   const [electionName, setElectionName] = useState('');
@@ -57,13 +57,15 @@ function AdminPanel({ showNotification }) {
           
           // Try to fetch candidates
           try {
-            const results = await contract.getAllVotesOfCandidates();
+            const electionId = await contract.nextElectionId();
+            const currentElectionId = Number(electionId) - 1;
+            const results = await contract.getAllVotesOfCandidates(currentElectionId);
             const candidateNames = results[0];
             const candidateVotes = results[1];
             
             const candidatesData = candidateNames.map((name, index) => ({
               name,
-              votes: Number(candidateVotes[index])
+              votes: typeof candidateVotes[index]?.toNumber === 'function' ? candidateVotes[index].toNumber() : Number(candidateVotes[index])
             }));
             
             setCandidatesList(candidatesData);
@@ -100,7 +102,9 @@ function AdminPanel({ showNotification }) {
       setElectionStarted(true);
       setElectionName('');
       setShowNewElectionForm(false);
-      
+      if (typeof refreshElections === 'function') {
+        refreshElections();
+      }
       // In a real implementation, you would need to modify your smart contract
       // to support start and end dates
     } catch (error) {
@@ -118,7 +122,14 @@ function AdminPanel({ showNotification }) {
       const contract = await getContractInstance();
       if (!contract) return;
       
-      const tx = await contract.addCandidate(candidateName.trim());
+      const electionId = await contract.nextElectionId();
+      const currentElectionId = Number(electionId) - 1;
+      if (currentElectionId < 0) {
+        showNotification('No active election found to add candidate.', 'error');
+        return;
+      }
+      
+      const tx = await contract.addCandidate(currentElectionId, candidateName.trim());
       await tx.wait();
       showNotification(`Candidate '${candidateName}' added successfully!`, 'success');
       
@@ -136,6 +147,9 @@ function AdminPanel({ showNotification }) {
         ...prev,
         candidates: prev.candidates + 1
       }));
+      if (typeof refreshElections === 'function') {
+        refreshElections();
+      }
     } catch (error) {
       console.error(error);
       showNotification('Failed to add candidate.', 'error');
@@ -151,6 +165,9 @@ function AdminPanel({ showNotification }) {
       await tx.wait();
       showNotification('Election ended successfully!', 'success');
       setElectionStarted(false);
+      if (typeof refreshElections === 'function') {
+        refreshElections();
+      }
     } catch (error) {
       console.error(error);
       showNotification('Failed to end election.', 'error');

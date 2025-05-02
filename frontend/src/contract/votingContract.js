@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import VotingABI from '../contract/artifacts/Voting.json';
+import VotingABI from '../Voting.json';
 import contractAddress from '../contract/contract-address.json';
 
 export const getContract = (signerOrProvider) => {
@@ -21,15 +21,29 @@ export const getAllElections = async (signerOrProvider) => {
   try {
     const [ids, names, statuses] = await contract.getAllElections();
 
-    const elections = ids.map((id, index) => ({
-      id: id.toNumber(),
-      title: names[index],
-      status: statuses[index] ? 'active' : 'completed',
+    return ids.map((id, i) => ({
+      id: Number(id),
+      title: names[i],
+      active: Boolean(statuses[i])  // Explicit coercion
     }));
 
-    return elections;
   } catch (error) {
     console.error('Error fetching elections:', error);
+    throw error;
+  }
+};
+
+export const getActiveElections = async (signerOrProvider) => {
+  const contract = getContract(signerOrProvider);
+  try {
+    const [ids, names] = await contract.getActiveElections();
+    return ids.map((id, i) => ({
+      id: Number(id),
+      title: names[i],
+      active: true
+    }));
+  } catch (error) {
+    console.error('Error fetching active elections:', error);
     throw error;
   }
 };
