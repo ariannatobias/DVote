@@ -37,7 +37,18 @@ function AdminPanel({ showNotification, refreshElections }) {
   const [voterAddress, setVoterAddress] = useState('');
   const [voterElectionId, setVoterElectionId] = useState('');
 
-  
+  // Function to get contract instance - memoized with useCallback
+  const getContractInstance = useCallback(async () => {
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      return new Contract(contractAddressJson.Voting, VotingABI.abi, signer);
+    } catch (error) {
+      console.error("Error creating contract instance:", error);
+      showNotification('Failed to initialize contract', 'error');
+      return null;
+    }
+  }, [showNotification]);
 
   // Check if voting is active on component mount
   useEffect(() => {
