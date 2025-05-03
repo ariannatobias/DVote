@@ -34,40 +34,54 @@ function DVoteApp() {
   const [hasVoted, setHasVoted] = useState(false);
   
   // Connect to MetaMask
-  const connectWallet = async () => {
-    try {
-      setLoading(true);
-      if (window.ethereum) {
-        const provider = new BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const account = await signer.getAddress();
-        setAccount(account);
+const connectWallet = async () => {
+  try {
+    setLoading(true);
+    if (window.ethereum) {
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const account = await signer.getAddress();
+      setAccount(account);
 
-        try {
-          // Use contract address from contract-address.json:
-          const contract = new Contract(contractAddressJson.Voting, VotingABI.abi, signer);
-          const ADMIN_ROLE = keccak256(toUtf8Bytes("ADMIN_ROLE"));
-          const isAdmin = await contract.hasRole(ADMIN_ROLE, account);
-          console.log("Connected account:", account);
-          console.log("ADMIN_ROLE hash:", ADMIN_ROLE);
-          console.log("hasRole result:", isAdmin);
-          setUserRole(isAdmin ? 'admin' : 'voter');
-        } catch (err) {
-          console.error('Error fetching user role:', err);
-          setUserRole('voter');
+      try {
+        // Use contract address from contract-address.json:
+        const contract = new Contract(contractAddressJson.Voting, VotingABI.abi, signer);
+        const ADMIN_ROLE = keccak256(toUtf8Bytes("ADMIN_ROLE"));
+        const isAdmin = await contract.hasRole(ADMIN_ROLE, account);
+        console.log("Connected account:", account);
+        console.log("ADMIN_ROLE hash:", ADMIN_ROLE);
+        console.log("hasRole result:", isAdmin);
+        setUserRole(isAdmin ? 'admin' : 'voter');
+
+        // NEW:  register voter if not admin
+        if (!isAdmin) {
+          const activeElections = await contract.getActiveElections();
+          if (activeElections.length > 0) {
+            const activeElectionId = activeElections[0][0]; // get first active election ID
+            console.log("Registering voter for election ID:", activeElectionId);
+            const adminSigner = signer; // Assuming admin signer is same signer (or adjust if needed)
+            await contract.addEligibleVoter(activeElectionId, account);
+            console.log("Voter registered successfully");
+          }
         }
-        setLoading(false);
-        showNotification('Wallet connected successfully!', 'success');
-      } else {
-        showNotification('Please install MetaMask to use this application', 'error');
-        setLoading(false);
+
+      } catch (err) {
+        console.error('Error fetching user role:', err);
+        setUserRole('voter');
       }
-    } catch (error) {
-      console.error(error);
-      showNotification('Error connecting wallet', 'error');
+      setLoading(false);
+      showNotification('Wallet connected successfully!', 'success');
+    } else {
+      showNotification('Please install MetaMask to use this application', 'error');
       setLoading(false);
     }
-  };
+  } catch (error) {
+    console.error(error);
+    showNotification('Error connecting wallet', 'error');
+    setLoading(false);
+  }
+};
+
   
   // Show notification
   const showNotification = (message, type) => {
@@ -96,7 +110,7 @@ function DVoteApp() {
           electionsFromContract.map(async (election) => {
             const { id, title } = election;
             const contract = getContract(provider);
-            const [names, votes] = await getCandidates(contract, id);
+            const [names, votes] = await getCandidates(contract, election.id);
 
             const candidates = names.map((name, i) => ({
               id: i,

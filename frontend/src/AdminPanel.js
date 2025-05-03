@@ -3,6 +3,7 @@ import './AdminPanel.css';
 import { BrowserProvider, Contract } from 'ethers';
 import VotingABI from './contract/artifacts/Voting.json';
 import contractAddressJson from './contract/contract-address.json';
+
 import { 
   Plus, 
   PlayCircle, 
@@ -15,7 +16,8 @@ import {
   Calendar,
   Clock,
   List,
-  RefreshCw
+  RefreshCw,
+  UserPlus
 } from 'lucide-react';
 
 function AdminPanel({ showNotification, refreshElections }) {
@@ -32,7 +34,9 @@ function AdminPanel({ showNotification, refreshElections }) {
   const [candidatesList, setCandidatesList] = useState([]);
   const [showCandidates, setShowCandidates] = useState(false);
   const [showNewElectionForm, setShowNewElectionForm] = useState(false);
-  
+  const [voterAddress, setVoterAddress] = useState('');
+  const [voterElectionId, setVoterElectionId] = useState('');
+
   // Function to get contract instance - memoized with useCallback
   const getContractInstance = useCallback(async () => {
     try {
@@ -45,7 +49,7 @@ function AdminPanel({ showNotification, refreshElections }) {
       return null;
     }
   }, [showNotification]);
-  
+
   // Check if voting is active on component mount
   useEffect(() => {
     const checkVotingStatus = async () => {
@@ -54,22 +58,24 @@ function AdminPanel({ showNotification, refreshElections }) {
         if (contract) {
           const isActive = await contract.votingActive();
           setElectionStarted(isActive);
-          
+
           // Try to fetch candidates
           try {
             const electionId = await contract.nextElectionId();
             const currentElectionId = Number(electionId) - 1;
+            console.log("Current Election ID:", currentElectionId);
+
             const results = await contract.getAllVotesOfCandidates(currentElectionId);
             const candidateNames = results[0];
             const candidateVotes = results[1];
-            
+
             const candidatesData = candidateNames.map((name, index) => ({
               name,
               votes: typeof candidateVotes[index]?.toNumber === 'function' ? candidateVotes[index].toNumber() : Number(candidateVotes[index])
             }));
-            
+
             setCandidatesList(candidatesData);
-            
+
             setElectionStats(prev => ({
               ...prev,
               candidates: candidatesData.length,
@@ -83,7 +89,7 @@ function AdminPanel({ showNotification, refreshElections }) {
         console.error("Error checking voting status:", error);
       }
     };
-    
+
     checkVotingStatus();
   }, [getContractInstance]);
 
@@ -95,7 +101,7 @@ function AdminPanel({ showNotification, refreshElections }) {
     try {
       const contract = await getContractInstance();
       if (!contract) return;
-      
+
       const tx = await contract.startElection(electionName.trim());
       await tx.wait();
       showNotification('Election started successfully!', 'success');
@@ -105,8 +111,6 @@ function AdminPanel({ showNotification, refreshElections }) {
       if (typeof refreshElections === 'function') {
         refreshElections();
       }
-      // In a real implementation, you would need to modify your smart contract
-      // to support start and end dates
     } catch (error) {
       console.error(error);
       showNotification('Failed to start election.', 'error');
@@ -121,28 +125,26 @@ function AdminPanel({ showNotification, refreshElections }) {
     try {
       const contract = await getContractInstance();
       if (!contract) return;
-      
+
       const electionId = await contract.nextElectionId();
       const currentElectionId = Number(electionId) - 1;
       if (currentElectionId < 0) {
         showNotification('No active election found to add candidate.', 'error');
         return;
       }
-      
+
       const tx = await contract.addCandidate(currentElectionId, candidateName.trim());
       await tx.wait();
       showNotification(`Candidate '${candidateName}' added successfully!`, 'success');
-      
-      // Add the candidate to our local state
+
       const newCandidate = {
         name: candidateName,
         votes: 0
       };
-      
+
       setCandidatesList(prev => [...prev, newCandidate]);
       setCandidateName('');
-      
-      // Update the candidate count
+
       setElectionStats(prev => ({
         ...prev,
         candidates: prev.candidates + 1
@@ -160,7 +162,7 @@ function AdminPanel({ showNotification, refreshElections }) {
     try {
       const contract = await getContractInstance();
       if (!contract) return;
-      
+
       const tx = await contract.endElection();
       await tx.wait();
       showNotification('Election ended successfully!', 'success');
@@ -174,12 +176,30 @@ function AdminPanel({ showNotification, refreshElections }) {
     }
   };
 
-  // Helper to format date for datetime-local input
+  const handleAddVoter = async () => {
+    if (!voterAddress.trim() || voterElectionId === '') {
+      showNotification('Please enter both Election ID and Voter Address.', 'warning');
+      return;
+    }
+    try {
+      const contract = await getContractInstance();
+      if (!contract) return;
+
+      const tx = await contract.addEligibleVoter(Number(voterElectionId), voterAddress.trim());
+      await tx.wait();
+      showNotification(`Voter ${voterAddress} added to election ID ${voterElectionId}!`, 'success');
+      setVoterAddress('');
+      setVoterElectionId('');
+    } catch (error) {
+      console.error(error);
+      showNotification('Failed to add voter.', 'error');
+    }
+  };
+
   const formatDateForInput = (date) => {
     return date.toISOString().slice(0, 16);
   };
 
-  // Format date for display
   const formatDateForDisplay = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleString('en-US', {
@@ -192,14 +212,13 @@ function AdminPanel({ showNotification, refreshElections }) {
     });
   };
 
-  // Set default dates if not set
   useEffect(() => {
     if (!startDate) {
       const now = new Date();
       setStartDate(formatDateForInput(now));
-      
+
       const defaultEndDate = new Date();
-      defaultEndDate.setDate(defaultEndDate.getDate() + 7); // Default 7 days later
+      defaultEndDate.setDate(defaultEndDate.getDate() + 7);
       setEndDate(formatDateForInput(defaultEndDate));
     }
   }, [startDate]);
@@ -243,7 +262,7 @@ function AdminPanel({ showNotification, refreshElections }) {
                 onChange={(e) => setElectionName(e.target.value)}
               />
             </div>
-            
+
             <div className="date-inputs">
               <div className="input-group">
                 <label htmlFor="start-date">
@@ -257,7 +276,7 @@ function AdminPanel({ showNotification, refreshElections }) {
                   onChange={(e) => setStartDate(e.target.value)}
                 />
               </div>
-              
+
               <div className="input-group">
                 <label htmlFor="end-date">
                   <Calendar size={16} />
@@ -271,7 +290,7 @@ function AdminPanel({ showNotification, refreshElections }) {
                 />
               </div>
             </div>
-            
+
             <button 
               onClick={handleStartElection} 
               disabled={!electionName}
@@ -280,7 +299,7 @@ function AdminPanel({ showNotification, refreshElections }) {
               <PlayCircle size={18} />
               Start Election
             </button>
-            
+
             {showNewElectionForm && (
               <button 
                 onClick={() => setShowNewElectionForm(false)} 
@@ -299,7 +318,7 @@ function AdminPanel({ showNotification, refreshElections }) {
               Election In Progress
             </h3>
             <p>An election is currently in progress.</p>
-            
+
             <div className="election-timeline">
               <div className="timeline-item">
                 <Calendar size={16} />
@@ -310,7 +329,7 @@ function AdminPanel({ showNotification, refreshElections }) {
                 <span>Ends: {formatDateForDisplay(endDate)}</span>
               </div>
             </div>
-            
+
             <div className="election-meta">
               <div className="meta-stats">
                 <div className="stat-badge">
@@ -329,7 +348,7 @@ function AdminPanel({ showNotification, refreshElections }) {
                   {showCandidates ? 'Hide' : 'View'} Candidates
                 </button>
               </div>
-              
+
               <button 
                 className="new-election-btn"
                 onClick={() => setShowNewElectionForm(true)}
@@ -338,7 +357,7 @@ function AdminPanel({ showNotification, refreshElections }) {
                 Start a Different Election
               </button>
             </div>
-            
+
             {showCandidates && (
               <div className="candidates-list">
                 {candidatesList.length > 0 ? (
@@ -356,7 +375,7 @@ function AdminPanel({ showNotification, refreshElections }) {
               </div>
             )}
           </div>
-          
+
           <div className="admin-cards-container">
             <div className="admin-card">
               <h3>
@@ -382,7 +401,7 @@ function AdminPanel({ showNotification, refreshElections }) {
                 <Plus size={18} />
                 Add Candidate
               </button>
-              
+
               {candidatesList.length > 0 && (
                 <div className="added-candidates">
                   <p>Added Candidates ({candidatesList.length})</p>
@@ -403,15 +422,50 @@ function AdminPanel({ showNotification, refreshElections }) {
                 End Election
               </h3>
               <p>End the current election and finalize results. This action cannot be undone.</p>
-              
+
               <div className="scheduled-end">
                 <Clock size={16} />
                 <span>Scheduled End: {formatDateForDisplay(endDate)}</span>
               </div>
-              
+
               <button onClick={handleEndElection} className="end-election-btn">
                 <StopCircle size={18} />
                 End Election Now
+              </button>
+            </div>
+
+            <div className="admin-card">
+              <h3>
+                <UserPlus size={20} />
+                Add Voter to Election
+              </h3>
+              <div className="input-group">
+                <label htmlFor="voter-election-id">Election ID</label>
+                <input
+                  id="voter-election-id"
+                  type="number"
+                  placeholder="Enter Election ID"
+                  value={voterElectionId}
+                  onChange={(e) => setVoterElectionId(e.target.value)}
+                />
+              </div>
+              <div className="input-group">
+                <label htmlFor="voter-address">Voter Address</label>
+                <input
+                  id="voter-address"
+                  type="text"
+                  placeholder="Enter Voter Address"
+                  value={voterAddress}
+                  onChange={(e) => setVoterAddress(e.target.value)}
+                />
+              </div>
+              <button 
+                onClick={handleAddVoter}
+                disabled={!voterAddress || voterElectionId === ''}
+                className="add-voter-btn"
+              >
+                <UserPlus size={18} />
+                Add Voter
               </button>
             </div>
           </div>
