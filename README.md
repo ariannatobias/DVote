@@ -71,7 +71,7 @@ Go to `http://localhost:3000`
 
 ---
 
-## 🌐 Deploying to Sepolia Testnet
+## Deploying to Sepolia Testnet
 
 ### 1. Configure `.env`
 
