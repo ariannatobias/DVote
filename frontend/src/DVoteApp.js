@@ -13,7 +13,6 @@ import {
   CheckCircle
 } from 'lucide-react';
 import Results from './Results';
-import ZkVerification from './ZkVerification';
 import AdminPanel from './AdminPanel';
 import './DVoteApp.css';
 import { getContract, getCandidates, getAllElections, getActiveElections, vote as castVoteOnChain } from './contract/votingContract';
@@ -682,10 +681,7 @@ function DVoteApp() {
                     electionId={activeElection.id}
                     election={activeElection}
                     account={account}
-                    onVerified={() => {
-                      // Optional: update hasVoted or trigger some UI state
-                      showNotification('Verification successful. You may now vote.', NOTIFICATION_TYPES.SUCCESS);
-                    }}
+                    onVerified={handleVerificationComplete}
                   />
                   <h2>Cast Your Vote</h2>
                   <p className="vote-instructions">
@@ -724,9 +720,6 @@ function DVoteApp() {
                 <Results election={activeElection} />
               )}
               
-              {activeTab === TABS.VERIFICATION && (
-                <ZkVerification onVerificationComplete={handleVerificationComplete} />
-              )}
               
               {activeTab === TABS.SETTINGS && (
                 <>
