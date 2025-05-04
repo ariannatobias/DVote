@@ -13,6 +13,26 @@ Before running the DVote app, ensure you have the following installed:
 | Git                | Latest                | [Git](https://git-scm.com/downloads)                            |
 
 
+##  **Project Flow Overview**
+
+This quick guide outlines how the DVote system works from start to finish:
+
+### **Admin Tasks:**
+
+- Deploys the smart contract to the Ethereum network.
+- Adds election candidates and registers eligible voters.
+- Starts the election, making it available to the public.
+
+### **Voter Tasks:**
+
+- 🦊 Connects their MetaMask wallet to the DVote frontend.
+- 🔐 Generates a zero-knowledge proof (zk-proof) to verify eligibility anonymously.
+- 🗳️ Selects a candidate and casts their vote securely and privately.
+
+### **System Operations:**
+
+- Verifies the zk-proof on-chain to ensure eligibility and prevent double voting.
+- 📈Updates the vote count and participation stats in real-time as new votes are mined.
 
 ## Running as Admin (Local Setup)
 
