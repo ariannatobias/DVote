@@ -112,18 +112,42 @@ npm start
 
 ```
 DVote/
-├── contracts/            # Solidity smart contracts
-├── scripts/              # Deployment scripts
-├── test/                 # Unit tests
-├── frontend/             # React.js app
+├── contracts/
+│   └── Voting.sol                    # Solidity smart contract for voting logic
+│
+├── scripts/
+│   └── deploy.js                     # Hardhat deployment script
+│
+├── frontend/
+│   ├── public/
+│   │   └── index.html                # Main HTML template
+│   │
 │   ├── src/
-│   │   ├── contract/     # ABI + contract address
-│   │   ├── components/   # React components
-│   │   └── utils/        # Wallet + zk logic
-├── .env.example
-├── README.md
-├── hardhat.config.js
-└── package.json
+│   │   ├── contract/
+│   │   │   ├── artifacts/
+│   │   │   │   └── Voting.json       # Compiled contract ABI (optional in repo)
+│   │   │   ├── contract-address.json # Deployed contract address reference
+│   │   │   └── votingContract.js     # JS wrapper to interact with contract
+│   │   │
+│   │   ├── AdminPanel.js             # Admin interface for managing elections
+│   │   ├── DVoteApp.js               # Root component for app logic
+│   │   ├── Results.js                # Component to show live results
+│   │   ├── TabComponents.js          # Navigation tab logic
+│   │   ├── App.js                    # Main app container
+│   │   ├── index.js                  # Entry point
+│   │   └── setupTests.js             # React test config
+│   │
+│   ├── DVoteApp.css
+│   ├── AdminPanel.css
+│   ├── Results.css
+│   ├── App.css
+│   ├── index.css
+│   └── package.json                  # Frontend dependencies
+│
+├── .env.example                      # Environment variable sample
+├── hardhat.config.js                # Hardhat setup and network config
+├── package.json                     # Root package file for Hardhat tools
+└── README.md                        # Project documentation
 ```
 
 ---
