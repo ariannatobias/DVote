@@ -1,5 +1,6 @@
 # DVote 
-A Web3-Based Voting Framework with zk-SNARK Privacy on Ethereum
+## A Web3-Based Voting Framework with zk-SNARK Privacy on Ethereum
+DVote is a secure, transparent, and privacy-preserving blockchain-based voting application. By integrating zero-knowledge proofs (zk-SNARKs), Ethereum smart contracts, and a React.js frontend, the system allows voters to cast anonymous votes while maintaining full on-chain auditability and real-time result updates. The platform features role-based access control, seamless wallet integration (MetaMask), and protection against double voting through cryptographic nullifiers.
 
 ## Running as Admin (Local Setup)
 
@@ -11,15 +12,15 @@ From the root directory of the project:
 npx hardhat node
 ```
 
-This will launch a local blockchain and show a list of accounts and private keys.
+This launches a local Ethereum blockchain (using Hardhat Network) and displays a list of accounts along with their private keys in your terminal. These accounts will be used for contract deployment, admin access, and testing.
 
 ### 2. Deploy the Contract to Localhost
-In a separate terminal:
+In a new terminal window (keep the node running), deploy the voting contract:
 ```bash
 npx hardhat run scripts/deploy.js --network localhost
 ```
 
-This deploys the contract using the first account listed in the node output (Account #0).
+This deploys the contract using the first account listed in the node output (Account #0),which acts as the Admin.
 
 ### 3. Import Admin Account into MetaMask
 - Copy the **private key** of Account #0 from the terminal output.
