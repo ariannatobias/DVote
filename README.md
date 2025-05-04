@@ -2,6 +2,18 @@
 ## A Web3-Based Voting Framework with zk-SNARK Privacy on Ethereum
 DVote is a secure, transparent, and privacy-preserving blockchain-based voting application. By integrating zero-knowledge proofs (zk-SNARKs), Ethereum smart contracts, and a React.js frontend, the system allows voters to cast anonymous votes while maintaining full on-chain auditability and real-time result updates. The platform features role-based access control, seamless wallet integration (MetaMask), and protection against double voting through cryptographic nullifiers.
 
+## Prerequisites
+Before running the DVote app, ensure you have the following installed:
+
+| Tool               | Version (Recommended) | Install Guide                                                   |
+|--------------------|-----------------------|-----------------------------------------------------------------|
+| Node.js & npm      | v16+                  | [Node.js](https://nodejs.org)                                   |
+| Hardhat            | Latest                | `npm install --save-dev hardhat`                                |
+| MetaMask Extension | Latest                | [MetaMask](https://metamask.io/download)                        |
+| Git                | Latest                | [Git](https://git-scm.com/downloads)                            |
+
+
+
 ## Running as Admin (Local Setup)
 
 Follow these steps to run the DVote app and access admin features locally:
@@ -26,15 +38,19 @@ This deploys the contract using the first account listed in the node output (Acc
 - Copy the **private key** of Account #0 from the terminal output.
 - In MetaMask, go to *Import Account* and paste the private key.
 - Switch the MetaMask network to **Localhost 8545**.
-
+  
+This lets you control the election as the Admin from the DVote interface.
 ### 4. Start the Frontend
-From the `frontend` directory:
+From the frontend/ directory, install dependencies and start the React app:
 ```bash
 npm install
 npm start
 ```
-
-Open your browser to `http://localhost:3000` and connect MetaMask using the admin account. You should now have access to all admin features including starting and managing elections.
+Then open your browser and navigate to:
+```bash
+http://localhost:3000
+```
+ Once after you navigate connect MetaMask using the admin account. You should now have access to all admin features including starting and managing elections.
 
 ## DVote Project Timeline
 
