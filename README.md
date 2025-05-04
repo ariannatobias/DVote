@@ -72,6 +72,74 @@ http://localhost:3000
 ```
  Once after you navigate connect MetaMask using the admin account. You should now have access to all admin features including starting and managing elections.
 
+## Running on Sepolia Testnet (Recommended)
+
+This section explains how to deploy and run DVote on the Ethereum Sepolia Testnet for a real-world simulation. Sepolia allows public blockchain testing **without using real ETH**.
+
+### **Prerequisites:**
+
+| Tool/Service          | Purpose                                                     | Link                                        |
+|-----------------------|-------------------------------------------------------------|--------------------------------------------|
+| **Alchemy account**   | Blockchain RPC provider for Sepolia (or use Infura/Moralis) | https://dashboard.alchemy.com              |
+| **MetaMask wallet**   | Browser wallet to interact with Ethereum                    | https://metamask.io                        |
+| **Sepolia faucet**    | Free ETH for testing transactions                           | https://sepoliafaucet.com                   |
+| **Node.js & npm**     | For running the frontend and Hardhat                        | https://nodejs.org                          |
+
+---
+
+###  **1. Configure `.env`**
+
+1️⃣ In the root of your project, **create a `.env` file** to store your sensitive keys securely.
+
+Example `.env` file:
+
+```dotenv
+API_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_KEY
+PRIVATE_KEY=your_metamask_private_key
+```
+
+**API_URL:** Get this from Alchemy (or Infura) after creating a Sepolia project.
+**PRIVATE_KEY:** Export your MetaMask private key **(do NOT share this publicly!)**. This is the account that will deploy the contract and act as the Admin.
+**Important:** Make sure your MetaMask is set to the **Sepolia network** and has test ETH (from the faucet).
+
+### 2. Deploy the Contract to Sepolia
+In your terminal (from the project root):
+```bash
+npx hardhat run scripts/deploy.js --network sepolia
+```
+This will:
+
+- Compile the contract.
+- Deploy it to Sepolia using the account in your `.env.`
+- Output the contract address (copy this for the next step).
+
+### 3. Connect the Frontend
+Navigate to the frontend folder:
+```bash
+cd frontend/
+```
+
+Update the contract address:
+Open `frontend/src/contract/contract-address.json.`
+Replace the existing address with the Sepolia contract address you got from the deployment step.
+Example
+```bash
+{
+  "Voting": "0xYourSepoliaContractAddressHere"
+}
+```
+
+Install dependencies and start the app:
+```bash
+npm install
+npm start
+```
+Open the app at:
+```bash
+http://localhost:3000
+```
+
+
 ## DVote Project Timeline
 
 This Gantt chart outlines the full project development plan for **DVote: A Web3-Based Voting Framework with zk-SNARK Privacy on Ethereum**, based on project requirements, rubric criteria, and instructor feedback.
