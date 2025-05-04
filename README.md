@@ -6,7 +6,7 @@
 
 ---
 
-## 📽️ [Watch the Demo Video](https://your-demo-link-here.com)
+## 📽️ [Watch the Demo Video](https://youtu.be/CCs1yzcKARE)
 
 > In the demo, we walk through:
 
