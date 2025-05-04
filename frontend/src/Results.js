@@ -1,6 +1,6 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Shield, Users, Award, Clock, CheckCircle } from 'lucide-react';
 
 const Results = ({ election }) => {
@@ -8,6 +8,7 @@ const Results = ({ election }) => {
   const [pieData, setPieData] = useState([]);
   const [electionStatus, setElectionStatus] = useState('active');
   const [remainingTime, setRemainingTime] = useState('');
+  const [totalEligibleVoters, setTotalEligibleVoters] = useState(0);
   
   // Colors for the charts
   const COLORS = ['#6c5ce7', '#00cec9', '#00b894', '#fdcb6e', '#ff7675'];
@@ -21,7 +22,7 @@ const Results = ({ election }) => {
         platform: candidate.platform
       }));
       setChartData(formattedData);
-      
+
       // Format data for pie chart
       const totalVotes = election.votedCount;
       const pieFormattedData = election.candidates.map(candidate => ({
@@ -30,12 +31,45 @@ const Results = ({ election }) => {
         percent: totalVotes > 0 ? ((candidate.votes / totalVotes) * 100).toFixed(1) : 0
       }));
       setPieData(pieFormattedData);
-      
-      // Set election status
+
+      // Set initial election status
       setElectionStatus(election.status);
+
+      // Debug logging
+      console.log('Election object:', election);
+      console.log('EligibleVoters:', election.eligibleVoters);
+      console.log('Current totalVoters:', election.totalVoters);
+
+      // Dynamically compute totalVoters based on eligibleVoters
+      let eligibleCount = 0;
       
-      // Calculate remaining time for active elections
-      if (election.status === 'active') {
+      if (election.eligibleVoters) {
+        // Check if it's an array
+        if (Array.isArray(election.eligibleVoters)) {
+          eligibleCount = election.eligibleVoters.length;
+        } 
+        // Check if it's an object
+        else if (typeof election.eligibleVoters === 'object') {
+          eligibleCount = Object.keys(election.eligibleVoters).length;
+        }
+      }
+      
+      // Fallback to totalVoters if eligibleVoters is empty
+      if (eligibleCount === 0 && election.totalVoters) {
+        eligibleCount = election.totalVoters;
+      }
+      
+      console.log('Calculated eligible voters:', eligibleCount);
+      setTotalEligibleVoters(eligibleCount);
+    }
+  }, [election]);
+  
+  // Add timer effect for active elections
+  useEffect(() => {
+    let interval;
+    
+    if (election && electionStatus === 'active') {
+      const updateTimer = () => {
         const endTime = new Date(election.endTime);
         const now = new Date();
         const diff = endTime - now;
@@ -44,14 +78,27 @@ const Results = ({ election }) => {
           const days = Math.floor(diff / (1000 * 60 * 60 * 24));
           const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
           const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
           
-          setRemainingTime(`${days}d ${hours}h ${minutes}m`);
+          setRemainingTime(`${days}d ${hours}h ${minutes}m ${seconds}s`);
         } else {
           setRemainingTime('Ended');
+          setElectionStatus('completed');
+          clearInterval(interval);
         }
-      }
+      };
+      
+      // Update immediately
+      updateTimer();
+      
+      // Update every second
+      interval = setInterval(updateTimer, 1000);
     }
-  }, [election]);
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [election, electionStatus]);
   
   // Custom tooltip for bar chart
   const CustomBarTooltip = ({ active, payload, label }) => {
@@ -143,7 +190,7 @@ const Results = ({ election }) => {
             <Shield size={18} />
           </div>
           <div className="stat-content">
-            <span className="stat-value">{election?.totalVoters || 0}</span>
+            <span className="stat-value">{totalEligibleVoters}</span>
             <span className="stat-label">Eligible Voters</span>
           </div>
         </div>
@@ -154,8 +201,8 @@ const Results = ({ election }) => {
           </div>
           <div className="stat-content">
             <span className="stat-value">
-              {election?.totalVoters > 0 
-                ? `${Math.round((election.votedCount / election.totalVoters) * 100)}%` 
+              {totalEligibleVoters > 0 
+                ? `${Math.round((election?.votedCount / totalEligibleVoters) * 100)}%` 
                 : '0%'}
             </span>
             <span className="stat-label">Participation</span>
@@ -218,28 +265,6 @@ const Results = ({ election }) => {
               </PieChart>
             </ResponsiveContainer>
           </div>
-        </div>
-      </div>
-      
-      <div className="verification-section">
-        <h3>Blockchain Verification</h3>
-        <div className="verification-info">
-          <p>This election is secured using zk-SNARKs for anonymous voting while maintaining full transparency.</p>
-          <div className="verification-details">
-            <div className="verification-item">
-              <span className="label">Contract Address:</span>
-              <span className="value">0x71C...F3a7</span>
-            </div>
-            <div className="verification-item">
-              <span className="label">Total Transactions:</span>
-              <span className="value">{election?.votedCount || 0}</span>
-            </div>
-            <div className="verification-item">
-              <span className="label">Last Block:</span>
-              <span className="value">#14,325,987</span>
-            </div>
-          </div>
-          <button className="verify-btn">Verify on Etherscan</button>
         </div>
       </div>
     </div>

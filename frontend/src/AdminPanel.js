@@ -20,7 +20,7 @@ import {
   UserPlus
 } from 'lucide-react';
 
-function AdminPanel({ showNotification, refreshElections }) {
+function AdminPanel({ showNotification, refreshElections, election, updateElection }) {
   const [candidateName, setCandidateName] = useState('');
   const [electionStarted, setElectionStarted] = useState(false);
   const [electionName, setElectionName] = useState('');
@@ -35,7 +35,6 @@ function AdminPanel({ showNotification, refreshElections }) {
   const [showCandidates, setShowCandidates] = useState(false);
   const [showNewElectionForm, setShowNewElectionForm] = useState(false);
   const [voterAddress, setVoterAddress] = useState('');
-  const [voterElectionId, setVoterElectionId] = useState('');
 
   // Function to get contract instance - memoized with useCallback
   const getContractInstance = useCallback(async () => {
@@ -105,6 +104,16 @@ function AdminPanel({ showNotification, refreshElections }) {
 
       const tx = await contract.startElection(electionName, 0); // 0 = SybilResistanceMethod.None
       await tx.wait();
+      
+      // Initialize eligibleVoters as an empty object
+      if (election && updateElection) {
+        updateElection({
+          ...election,
+          eligibleVoters: {},
+          totalVoters: 0
+        });
+      }
+      
       showNotification('Election started successfully!', 'success');
       setElectionStarted(true);
       setElectionName('');
@@ -178,19 +187,46 @@ function AdminPanel({ showNotification, refreshElections }) {
   };
 
   const handleAddVoter = async () => {
-    if (!voterAddress.trim() || voterElectionId === '') {
-      showNotification('Please enter both Election ID and Voter Address.', 'warning');
+    if (!voterAddress.trim()) {
+      showNotification('Please enter Voter Address.', 'warning');
       return;
     }
     try {
       const contract = await getContractInstance();
       if (!contract) return;
 
-      const tx = await contract.addEligibleVoter(Number(voterElectionId), voterAddress.trim());
+      // Automatically get the current election ID
+      const electionId = await contract.nextElectionId();
+      const currentElectionId = Number(electionId) - 1;
+      
+      if (currentElectionId < 0) {
+        showNotification('No active election found to add voter.', 'error');
+        return;
+      }
+
+      const tx = await contract.addEligibleVoter(currentElectionId, voterAddress.trim());
       await tx.wait();
-      showNotification(`Voter ${voterAddress} added to election ID ${voterElectionId}!`, 'success');
+      
+      // Update the eligibleVoters in the election object
+      if (election && updateElection) {
+        const updatedElection = {
+          ...election,
+          eligibleVoters: {
+            ...(election.eligibleVoters || {}),
+            [voterAddress.trim()]: true
+          },
+          totalVoters: (election.totalVoters || 0) + 1
+        };
+        updateElection(updatedElection);
+      }
+      
+      showNotification(`Voter ${voterAddress} added to the current election successfully!`, 'success');
       setVoterAddress('');
-      setVoterElectionId('');
+      
+      // Also trigger refresh if available
+      if (typeof refreshElections === 'function') {
+        refreshElections();
+      }
     } catch (error) {
       console.error(error);
       showNotification('Failed to add voter.', 'error');
@@ -438,18 +474,8 @@ function AdminPanel({ showNotification, refreshElections }) {
             <div className="admin-card">
               <h3>
                 <UserPlus size={20} />
-                Add Voter to Election
+                Add Voter to Current Election
               </h3>
-              <div className="input-group">
-                <label htmlFor="voter-election-id">Election ID</label>
-                <input
-                  id="voter-election-id"
-                  type="number"
-                  placeholder="Enter Election ID"
-                  value={voterElectionId}
-                  onChange={(e) => setVoterElectionId(e.target.value)}
-                />
-              </div>
               <div className="input-group">
                 <label htmlFor="voter-address">Voter Address</label>
                 <input
@@ -460,9 +486,14 @@ function AdminPanel({ showNotification, refreshElections }) {
                   onChange={(e) => setVoterAddress(e.target.value)}
                 />
               </div>
+              <div className="voters-status">
+                <p>
+                  {election?.eligibleVoters ? Object.keys(election.eligibleVoters).length : 0} eligible voters added
+                </p>
+              </div>
               <button 
                 onClick={handleAddVoter}
-                disabled={!voterAddress || voterElectionId === ''}
+                disabled={!voterAddress}
                 className="add-voter-btn"
               >
                 <UserPlus size={18} />
