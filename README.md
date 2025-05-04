@@ -89,7 +89,7 @@ This section explains how to deploy and run DVote on the Ethereum Sepolia Testne
 
 ###  **1. Configure `.env`**
 
-1️⃣ In the root of your project, **create a `.env` file** to store your sensitive keys securely.
+In the root of your project, **create a `.env` file** to store your sensitive keys securely.
 
 Example `.env` file:
 
@@ -122,7 +122,10 @@ cd frontend/
 Update the contract address:
 Open `frontend/src/contract/contract-address.json.`
 Replace the existing address with the Sepolia contract address you got from the deployment step.
-Example
+
+
+Example:
+
 ```bash
 {
   "Voting": "0xYourSepoliaContractAddressHere"
