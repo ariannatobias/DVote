@@ -669,20 +669,6 @@ a {
   color: var(--text);
 }
 
-.settings-card {
-  background: var(--background);
-  border-radius: var(--border-radius);
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.settings-card h3 {
-  margin-bottom: 1.5rem;
-  font-size: 1.2rem;
-  color: var(--text);
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border);
-}
 
 .setting-item {
   display: flex;

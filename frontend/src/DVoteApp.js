@@ -618,11 +618,17 @@ function DVoteApp() {
                     </div>
                     <div className="stat">
                       <span className="stat-label">Total Voters</span>
-                      <span className="stat-value">{activeElection.totalVoters}</span>
+                      <span className="stat-value">
+                        {activeElection.totalVoters?.toLocaleString() ?? 0}
+                      </span>
                     </div>
                     <div className="stat">
                       <span className="stat-label">Participation</span>
-                      <span className="stat-value">{Math.round((activeElection.votedCount / activeElection.totalVoters) * 100)}%</span>
+                      <span className="stat-value">
+                        {activeElection.totalVoters > 0
+                          ? `${Math.round((activeElection.votedCount / activeElection.totalVoters) * 100)}%`
+                          : '0%'}
+                      </span>
                     </div>
                   </div>
                   
@@ -723,87 +729,76 @@ function DVoteApp() {
               )}
               
               {activeTab === TABS.SETTINGS && (
-                <div className="settings-section">
-                  <h2>Account Settings</h2>
-                  
-                  <div className="settings-card">
-                    <h3>Wallet Information</h3>
-                    <div className="setting-item">
-                      <span className="setting-label">Connected Address</span>
-                      <span className="setting-value">{account}</span>
+                <>
+                  <div className="settings-section">
+                    <h2>Account Settings</h2>
+                    
+                    <div className="settings-card">
+                      <h3>Wallet Information</h3>
+                      <div className="setting-item">
+                        <span className="setting-label">Connected Address</span>
+                        <span className="setting-value">{account}</span>
+                      </div>
+                      <div className="setting-item">
+                        <span className="setting-label">Role</span>
+                        <span className="setting-value capitalize">{userRole}</span>
+                      </div>
+                      <div className="setting-item">
+                        <span className="setting-label">Network</span>
+                        <span className="setting-value">
+                          {window.ethereum?.networkVersion === "31337" ? "Localhost (Hardhat)" : "Unknown Network"}
+                        </span>
+                      </div>
+                      <button className="disconnect-btn" onClick={disconnectWallet}>
+                        Disconnect Wallet
+                      </button>
                     </div>
-                    <div className="setting-item">
-                      <span className="setting-label">Role</span>
-                      <span className="setting-value capitalize">{userRole}</span>
-                    </div>
-                    <div className="setting-item">
-                      <span className="setting-label">Network</span>
-                      <span className="setting-value">
-                        {window.ethereum?.networkVersion === "31337" ? "Localhost (Hardhat)" : "Unknown Network"}
-                      </span>
-                    </div>
-                    <button className="disconnect-btn" onClick={disconnectWallet}>
-                      Disconnect Wallet
-                    </button>
-                  </div>
-                  
-                  <div className="settings-card">
-                    <h3>Application Settings</h3>
-                    <div className="setting-item">
-                      <span className="setting-label">Theme</span>
-                      <div className="theme-selector">
-                        <button 
-                          className={`theme-option ${theme === 'light' ? 'active' : ''}`}
-                          onClick={() => {
-                            setTheme('light');
-                            document.documentElement.setAttribute('data-theme', 'light');
-                          }}
-                        >
-                          <Sun size={16} />
-                          <span>Light</span>
-                        </button>
-                        <button 
-                          className={`theme-option ${theme === 'dark' ? 'active' : ''}`}
-                          onClick={() => {
-                            setTheme('dark');
-                            document.documentElement.setAttribute('data-theme', 'dark');
-                          }}
-                        >
-                          <Moon size={16} />
-                          <span>Dark</span>
-                        </button>
+                    
+                    <div className="settings-card">
+                      <h3>Application Settings</h3>
+                      <div className="setting-item">
+                        <span className="setting-label">Theme</span>
+                        <div className="theme-selector">
+                          <button 
+                            className={`theme-option ${theme === 'light' ? 'active' : ''}`}
+                            onClick={() => {
+                              setTheme('light');
+                              document.documentElement.setAttribute('data-theme', 'light');
+                            }}
+                          >
+                            <Sun size={16} />
+                            <span>Light</span>
+                          </button>
+                          <button 
+                            className={`theme-option ${theme === 'dark' ? 'active' : ''}`}
+                            onClick={() => {
+                              setTheme('dark');
+                              document.documentElement.setAttribute('data-theme', 'dark');
+                            }}
+                          >
+                            <Moon size={16} />
+                            <span>Dark</span>
+                          </button>
+                        </div>
+                      </div>
+                      <div className="setting-item">
+                        <span className="setting-label">Notifications</span>
+                        <label className="toggle">
+                          <input type="checkbox" defaultChecked />
+                          <span className="toggle-slider"></span>
+                        </label>
                       </div>
                     </div>
-                    <div className="setting-item">
-                      <span className="setting-label">Notifications</span>
-                      <label className="toggle">
-                        <input type="checkbox" defaultChecked />
-                        <span className="toggle-slider"></span>
-                      </label>
+                    
+                    <div className="settings-card">
                     </div>
                   </div>
-                  
-                  <div className="settings-card">
-                    <h3>Privacy Settings</h3>
-                    <p className="privacy-info">
-                      DVote uses zk-SNARKs to ensure your vote remains private. Your identity is never linked to your voting choices on the blockchain.
-                    </p>
-                    <div className="verification-keys">
-                      <div className="key-item">
-                        <span className="key-label">Your Nullifier Hash</span>
-                        <span className="key-value">0x7f9a8b1c5d3e2f4a6b8c0d2e4f6a8b0c...</span>
-                      </div>
-                      <div className="key-item">
-                        <span className="key-label">Merkle Root</span>
-                        <span className="key-value">0x2a4b6c8d0e2f4a6b8c0d2e4f6a8b0c2...</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                </>
               )}
 
               {activeTab === TABS.ADMIN && userRole === USER_ROLES.ADMIN && (
                 <AdminPanel 
+                  activeElection={activeElection}
                   showNotification={showNotification}
                   refreshElections={async () => {
                     const provider = new BrowserProvider(window.ethereum);
