@@ -1,11 +1,13 @@
 const { ethers } = require("hardhat");
 const fs = require("fs");
 const path = require("path");
+require("dotenv").config();
 
 async function main() {
   const Voting = await ethers.getContractFactory("Voting");
-
-  const voting = await Voting.deploy();
+  const [deployer] = await ethers.getSigners();
+  const kycProvider = process.env.KYC_PROVIDER || deployer.address;
+  const voting = await Voting.deploy(kycProvider);
 
   console.log("Voting contract deployed to:", voting.target); // ethers v6 uses .target
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Home, 
   Vote, 
@@ -14,145 +14,282 @@ import {
 } from 'lucide-react';
 import Results from './Results';
 import ZkVerification from './ZkVerification';
+import AdminPanel from './AdminPanel';
 import './DVoteApp.css';
 import { getContract, getCandidates, getAllElections, getActiveElections, vote as castVoteOnChain } from './contract/votingContract';
 import contractAddressJson from './contract/contract-address.json';
 import { BrowserProvider, Contract, keccak256, toUtf8Bytes } from 'ethers';
-import VotingABI from './contract/artifacts/Voting.json'; // adjust path if needed
-import AdminPanel from './AdminPanel';
+import VotingABI from './contract/artifacts/Voting.json';
+
+/**
+ * SybilResistancePanel
+ * Panel for displaying and managing Sybil resistance (identity verification) for voting.
+ * Accepts electionId, election object, account, and onVerified callback.
+ */
+function SybilResistancePanel({ electionId, election, account, onVerified }) {
+  // For demonstration, display a placeholder for Semaphore and KYC, based on sybilMethod
+  // In a real app, you'd implement actual verification logic here.
+  let panelContent = null;
+  if (!election) {
+    panelContent = <div>Loading verification method...</div>;
+  } else if (election.sybilMethod === 1) {
+    panelContent = (
+      <div className="sybil-panel-content">
+        <h3>Semaphore Anonymous Verification</h3>
+        <p>
+          This election uses Semaphore for anonymous Sybil resistance. You will be asked to generate a zero-knowledge proof of membership.
+        </p>
+        <button
+          className="verify-btn"
+          onClick={() => {
+            // Simulate async verification
+            setTimeout(() => {
+              if (onVerified) onVerified();
+            }, 500);
+          }}
+        >
+          Generate Proof & Verify
+        </button>
+      </div>
+    );
+  } else if (election.sybilMethod === 2) {
+    panelContent = (
+      <div className="sybil-panel-content">
+        <h3>KYC Verification</h3>
+        <p>
+          This election requires KYC (Know Your Customer) verification. Please complete the identity verification process to vote.
+        </p>
+        <button
+          className="verify-btn"
+          onClick={() => {
+            // Simulate async KYC verification
+            setTimeout(() => {
+              if (onVerified) onVerified();
+            }, 800);
+          }}
+        >
+          Verify with KYC
+        </button>
+      </div>
+    );
+  } else {
+    panelContent = (
+      <div className="sybil-panel-content">
+        <h3>Verification Method Not Configured</h3>
+        <p>
+          No Sybil resistance method is set for this election.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="sybil-resistance-panel">
+      {panelContent}
+    </div>
+  );
+}
+
+// Constants
+const ADMIN_ROLE = "ADMIN_ROLE";
+const USER_ROLES = {
+  VISITOR: 'visitor',
+  VOTER: 'voter', 
+  ADMIN: 'admin',
+  AUDITOR: 'auditor'
+};
+
+const ELECTION_STATUS = {
+  ACTIVE: 'active',
+  UPCOMING: 'upcoming',
+  COMPLETED: 'completed'
+};
+
+const NOTIFICATION_TYPES = {
+  SUCCESS: 'success',
+  ERROR: 'error',
+  WARNING: 'warning',
+  INFO: 'info'
+};
+
+const TABS = {
+  DASHBOARD: 'dashboard',
+  VOTE: 'vote',
+  RESULTS: 'results',
+  SETTINGS: 'settings',
+  ADMIN: 'admin',
+  VERIFICATION: 'verification'
+};
 
 function DVoteApp() {
   // State management
   const [account, setAccount] = useState('');
-  const [userRole, setUserRole] = useState('visitor');
+  const [userRole, setUserRole] = useState(USER_ROLES.VISITOR);
   const [elections, setElections] = useState([]);
   const [activeElection, setActiveElection] = useState(null);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(TABS.DASHBOARD);
   const [theme, setTheme] = useState('light');
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState({ show: false, message: '', type: '' });
   const [hasVoted, setHasVoted] = useState(false);
   
-  // Connect to MetaMask
-const connectWallet = async () => {
-  try {
-    setLoading(true);
-    if (window.ethereum) {
+  /**
+   * Displays notification message to user
+   * @param {string} message - The message to display
+   * @param {string} type - Type of notification (success, error, warning, info)
+   */
+  const showNotification = useCallback((message, type) => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => {
+      setNotification({ show: false, message: '', type: '' });
+    }, 5000);
+  }, []);
+
+  /**
+   * Toggles between light and dark theme
+   */
+  const toggleTheme = useCallback(() => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    document.documentElement.setAttribute('data-theme', newTheme);
+  }, [theme]);
+
+  /**
+   * Registers voter for active election
+   * @param {Object} contract - The voting contract instance
+   * @param {Object} signer - The signer for transactions
+   * @param {string} account - The account address
+   */
+  const registerVoterForActiveElection = async (contract, signer, account) => {
+    const activeElections = await contract.getActiveElections();
+    if (activeElections.length > 0) {
+      const activeElectionId = activeElections[0][0];
+      console.log("Registering voter for election ID:", activeElectionId);
+      await contract.addEligibleVoter(activeElectionId, account);
+      console.log("Voter registered successfully");
+    }
+  };
+
+  /**
+   * Connects user's wallet and determines their role
+   */
+  const connectWallet = async () => {
+    try {
+      setLoading(true);
+      
+      if (!window.ethereum) {
+        showNotification('Please install MetaMask to use this application', NOTIFICATION_TYPES.ERROR);
+        return;
+      }
+
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const account = await signer.getAddress();
       setAccount(account);
 
       try {
-        // Use contract address from contract-address.json:
         const contract = new Contract(contractAddressJson.Voting, VotingABI.abi, signer);
-        const ADMIN_ROLE = keccak256(toUtf8Bytes("ADMIN_ROLE"));
-        const isAdmin = await contract.hasRole(ADMIN_ROLE, account);
+        const ADMIN_ROLE_HASH = keccak256(toUtf8Bytes(ADMIN_ROLE));
+        const isAdmin = await contract.hasRole(ADMIN_ROLE_HASH, account);
+        
         console.log("Connected account:", account);
-        console.log("ADMIN_ROLE hash:", ADMIN_ROLE);
+        console.log("ADMIN_ROLE hash:", ADMIN_ROLE_HASH);
         console.log("hasRole result:", isAdmin);
-        setUserRole(isAdmin ? 'admin' : 'voter');
+        
+        setUserRole(isAdmin ? USER_ROLES.ADMIN : USER_ROLES.VOTER);
 
-        // NEW:  register voter if not admin
+        // Register voter if not admin
         if (!isAdmin) {
-          const activeElections = await contract.getActiveElections();
-          if (activeElections.length > 0) {
-            const activeElectionId = activeElections[0][0]; // get first active election ID
-            console.log("Registering voter for election ID:", activeElectionId);
-            const adminSigner = signer; // Assuming admin signer is same signer (or adjust if needed)
-            await contract.addEligibleVoter(activeElectionId, account);
-            console.log("Voter registered successfully");
-          }
+          await registerVoterForActiveElection(contract, signer, account);
         }
 
       } catch (err) {
         console.error('Error fetching user role:', err);
-        setUserRole('voter');
+        setUserRole(USER_ROLES.VOTER);
       }
-      setLoading(false);
-      showNotification('Wallet connected successfully!', 'success');
-    } else {
-      showNotification('Please install MetaMask to use this application', 'error');
+      
+      showNotification('Wallet connected successfully!', NOTIFICATION_TYPES.SUCCESS);
+    } catch (error) {
+      console.error(error);
+      showNotification('Error connecting wallet', NOTIFICATION_TYPES.ERROR);
+    } finally {
       setLoading(false);
     }
-  } catch (error) {
-    console.error(error);
-    showNotification('Error connecting wallet', 'error');
-    setLoading(false);
-  }
-};
-
-  
-  // Show notification
-  const showNotification = (message, type) => {
-    setNotification({ show: true, message, type });
-    setTimeout(() => {
-      setNotification({ show: false, message: '', type: '' });
-    }, 5000);
   };
-  
-  // Toggle theme
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-  };
-  
-  useEffect(() => {
-    const fetchElections = async () => {
-      try {
-        const provider = new BrowserProvider(window.ethereum);
-        const electionsFromContract = await getActiveElections(provider);
 
-        console.log("Fetched Active Elections:", electionsFromContract);
-
-        const electionsWithCandidates = await Promise.all(
-          electionsFromContract.map(async (election) => {
-            const { id, title } = election;
-            const contract = getContract(provider);
-            const [names, votes] = await getCandidates(contract, election.id);
-
-            const candidates = names.map((name, i) => ({
-              id: i,
-              name: name,
-              votes: typeof votes[i]?.toNumber === 'function'
-                ? votes[i].toNumber()
-                : Number(votes[i]) || 0,
-              platform: ""
-            }));
-
-            return {
-              id: Number(id),
-              title,
-              candidates,
-              totalVoters: 1000,
-              votedCount: candidates.reduce((sum, c) => sum + c.votes, 0),
-              startTime: new Date().toISOString(),
-              endTime: new Date(Date.now() + 2 * 86400000).toISOString(),
-              status: 'active'
-            };
-          })
-        );
-
-        setElections(electionsWithCandidates);
-        if (electionsWithCandidates.length > 0) {
-          setActiveElection(electionsWithCandidates[0]);
-        }
-      } catch (err) {
-        console.error('Error loading elections:', err);
-        showNotification('Failed to load elections from contract', 'error');
-      }
+  /**
+   * Formats election data for display
+   * @param {Object} election - Raw election data from contract
+   * @param {Array} candidates - Array of candidate data
+   * @returns {Object} Formatted election data
+   */
+  const formatElectionData = (election, candidates) => {
+    const { id, title, txHash } = election;
+    // Hardcode sybilMethod for testing (1: Semaphore, 2: KYC)
+    return {
+      id: Number(id),
+      title,
+      candidates,
+      totalVoters: 1000, // This should come from contract if available
+      votedCount: candidates.reduce((sum, c) => sum + c.votes, 0),
+      startTime: new Date().toISOString(), // Should come from contract
+      endTime: new Date(Date.now() + 2 * 86400000).toISOString(), // Should come from contract
+      status: ELECTION_STATUS.ACTIVE, // Should be determined from contract data
+      txHash: txHash || null, // Transaction hash for Etherscan link
+      sybilMethod: 1 // 1 for Semaphore, 2 for KYC (hardcoded for testing)
     };
+  };
 
-    if (account && userRole !== 'visitor') {
+  /**
+   * Fetches elections from the contract and updates state
+   */
+  const fetchElections = useCallback(async () => {
+    try {
+      const provider = new BrowserProvider(window.ethereum);
+      const electionsFromContract = await getActiveElections(provider);
+
+      console.log("Fetched Active Elections:", electionsFromContract);
+
+      const electionsWithCandidates = await Promise.all(
+        electionsFromContract.map(async (election) => {
+          const contract = getContract(provider);
+          const [names, votes] = await getCandidates(contract, election.id);
+
+          const candidates = names.map((name, i) => ({
+            id: i,
+            name: name,
+            votes: typeof votes[i]?.toNumber === 'function'
+              ? votes[i].toNumber()
+              : Number(votes[i]) || 0,
+            platform: ""
+          }));
+
+          return formatElectionData(election, candidates);
+        })
+      );
+
+      setElections(electionsWithCandidates);
+      if (electionsWithCandidates.length > 0) {
+        setActiveElection(electionsWithCandidates[0]);
+      }
+    } catch (err) {
+      console.error('Error loading elections:', err);
+      showNotification('Failed to load elections from contract', NOTIFICATION_TYPES.ERROR);
+    }
+  }, [showNotification]);
+
+  useEffect(() => {
+    if (account && userRole !== USER_ROLES.VISITOR) {
       fetchElections();
     }
-  }, [account, userRole]);
-  
-  // Cast vote function
+  }, [account, userRole, fetchElections]);
+
+  /**
+   * Handles vote casting
+   * @param {number} candidateIndex - Index of the candidate
+   */
   const castVote = async (candidateIndex) => {
     if (hasVoted) {
-      showNotification('You have already voted in this election', 'warning');
+      showNotification('You have already voted in this election', NOTIFICATION_TYPES.WARNING);
       return;
     }
 
@@ -160,17 +297,19 @@ const connectWallet = async () => {
       const provider = new BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       await castVoteOnChain(activeElection.id, candidateIndex, signer);
-      showNotification('Vote submitted to the blockchain', 'success');
+      showNotification('Vote submitted to the blockchain', NOTIFICATION_TYPES.SUCCESS);
       setHasVoted(true);
-      setActiveTab('results');
+      setActiveTab(TABS.RESULTS);
     } catch (err) {
       console.error(err);
-      showNotification('Failed to vote. Check console.', 'error');
+      showNotification('Failed to vote. Check console.', NOTIFICATION_TYPES.ERROR);
     }
   };
-  
-  // Handle verification complete
-  const handleVerificationComplete = () => {
+
+  /**
+   * Handles verification completion
+   */
+  const handleVerificationComplete = useCallback(() => {
     setTimeout(() => {
       // Update UI after vote
       const updatedElections = elections.map(election => {
@@ -193,53 +332,68 @@ const connectWallet = async () => {
       setElections(updatedElections);
       setActiveElection(updatedElections.find(e => e.id === activeElection.id));
       setHasVoted(true);
-      showNotification('Vote cast successfully and anonymously recorded!', 'success');
-      setActiveTab('results');
+      showNotification('Vote cast successfully and anonymously recorded!', NOTIFICATION_TYPES.SUCCESS);
+      setActiveTab(TABS.RESULTS);
     }, 1000);
-  };
-  
-  // Format account address for display
+  }, [elections, activeElection, showNotification]);
+
+  /**
+   * Formats wallet address for display
+   * @param {string} address - The wallet address
+   * @returns {string} Formatted address
+   */
   const formatAddress = (address) => {
     if (!address) return '';
     return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
   };
-  
-  // Get role badge
+
+  /**
+   * Renders role badge based on user role
+   * @returns {JSX.Element|null} Role badge element
+   */
   const getRoleBadge = () => {
-    switch(userRole) {
-      case 'admin':
-        return <span className="role-badge admin">Admin</span>;
-      case 'voter':
-        return <span className="role-badge voter">Voter</span>;
-      case 'auditor':
-        return <span className="role-badge auditor">Auditor</span>;
-      default:
-        return null;
-    }
+    if (!userRole || userRole === USER_ROLES.VISITOR) return null;
+    
+    return (
+      <span className={`role-badge ${userRole}`}>
+        {userRole.charAt(0).toUpperCase() + userRole.slice(1)}
+      </span>
+    );
   };
-  
-  // Get status badge
+
+  /**
+   * Renders status badge based on election status
+   * @param {string} status - Election status
+   * @returns {JSX.Element|null} Status badge element
+   */
   const getStatusBadge = (status) => {
-    switch(status) {
-      case 'active':
-        return <span className="status-badge active">Active</span>;
-      case 'upcoming':
-        return <span className="status-badge upcoming">Upcoming</span>;
-      case 'completed':
-        return <span className="status-badge completed">Completed</span>;
-      default:
-        return null;
-    }
+    if (!status) return null;
+    
+    return (
+      <span className={`status-badge ${status}`}>
+        {status.charAt(0).toUpperCase() + status.slice(1)}
+      </span>
+    );
   };
-  
-  // Disconnect wallet (mock function)
+
+  /**
+   * Disconnects wallet and resets state
+   */
   const disconnectWallet = () => {
     setAccount('');
-    setUserRole('visitor');
+    setUserRole(USER_ROLES.VISITOR);
     setActiveElection(null);
     setHasVoted(false);
   };
-  
+
+  /**
+   * Handles navigation tab click
+   * @param {string} tab - Tab identifier
+   */
+  const handleTabClick = (tab) => {
+    setActiveTab(tab);
+  };
+
   return (
     <div className={`app-container ${theme}`}>
       {/* Header with Navigation */}
@@ -253,49 +407,50 @@ const connectWallet = async () => {
         </div>
         
         {account && (
-          <div className="main-navigation">
+          <nav className="main-navigation">
             <button 
-              className={`nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
-              onClick={() => setActiveTab('dashboard')}
+              className={`nav-btn ${activeTab === TABS.DASHBOARD ? 'active' : ''}`}
+              onClick={() => handleTabClick(TABS.DASHBOARD)}
             >
               <Home size={18} />
               <span>Dashboard</span>
             </button>
             
             <button 
-              className={`nav-btn ${activeTab === 'vote' ? 'active' : ''}`}
-              onClick={() => setActiveTab('vote')}
-              disabled={!activeElection || activeElection.status !== 'active' || hasVoted}
+              className={`nav-btn ${activeTab === TABS.VOTE ? 'active' : ''}`}
+              onClick={() => handleTabClick(TABS.VOTE)}
+              disabled={!activeElection || activeElection.status !== ELECTION_STATUS.ACTIVE || hasVoted}
             >
               <Vote size={18} />
               <span>Vote</span>
             </button>
             
             <button 
-              className={`nav-btn ${activeTab === 'results' ? 'active' : ''}`}
-              onClick={() => setActiveTab('results')}
+              className={`nav-btn ${activeTab === TABS.RESULTS ? 'active' : ''}`}
+              onClick={() => handleTabClick(TABS.RESULTS)}
             >
               <BarChart2 size={18} />
               <span>Results</span>
             </button>
             
             <button 
-              className={`nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
-              onClick={() => setActiveTab('settings')}
+              className={`nav-btn ${activeTab === TABS.SETTINGS ? 'active' : ''}`}
+              onClick={() => handleTabClick(TABS.SETTINGS)}
             >
               <Settings size={18} />
               <span>Settings</span>
             </button>
-            {userRole === 'admin' && (
+            
+            {userRole === USER_ROLES.ADMIN && (
               <button 
-                className={`nav-btn ${activeTab === 'admin' ? 'active' : ''}`}
-                onClick={() => setActiveTab('admin')}
+                className={`nav-btn ${activeTab === TABS.ADMIN ? 'active' : ''}`}
+                onClick={() => handleTabClick(TABS.ADMIN)}
               >
                 <Lock size={18} />
                 <span>Admin</span>
               </button>
             )}
-          </div>
+          </nav>
         )}
         
         <div className="header-actions">
@@ -305,7 +460,7 @@ const connectWallet = async () => {
                 {getRoleBadge()}
                 <span className="address">{formatAddress(account)}</span>
               </div>
-              <button className="theme-toggle" onClick={toggleTheme}>
+              <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
                 {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
               </button>
               <button 
@@ -318,7 +473,7 @@ const connectWallet = async () => {
             </>
           ) : (
             <>
-              <button className="theme-toggle" onClick={toggleTheme}>
+              <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
                 {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
               </button>
               <button 
@@ -411,26 +566,41 @@ const connectWallet = async () => {
                       key={election.id} 
                       className={`election-card ${activeElection && activeElection.id === election.id ? 'active' : ''}`}
                       onClick={() => setActiveElection(election)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') setActiveElection(election);
+                      }}
                     >
                       <h4>{election.title}</h4>
                       <div className="election-meta">
                         {getStatusBadge(election.status)}
                         <span className="vote-count">{election.votedCount}/{election.totalVoters}</span>
                       </div>
+                      <a 
+                        href={`https://etherscan.io/tx/${election.txHash || ''}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="etherscan-link"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        View on Etherscan
+                      </a>
                     </div>
                   ))}
                 </div>
               </div>
-            ) : (
-              <div className="no-elections-message">
-                <h3>No elections available yet</h3>
-                <p>Please check back later.</p>
-              </div>
-            )}
+            ) : null}
             
             {/* Page Content */}
             <div className="page-content">
-              {activeTab === 'dashboard' && activeElection && (
+              {activeTab === TABS.DASHBOARD && (
+                elections.length === 0 ? (
+                  <div className="no-elections-message">
+                    <h3>No elections available yet</h3>
+                    <p>Please check back later.</p>
+                  </div>
+                ) : activeElection ? (
                 <div className="election-details">
                   <div className="election-header">
                     <h2>{activeElection.title}</h2>
@@ -457,18 +627,18 @@ const connectWallet = async () => {
                   </div>
                   
                   <div className="election-actions">
-                    {activeElection.status === 'active' && !hasVoted && (
+                    {activeElection.status === ELECTION_STATUS.ACTIVE && !hasVoted && (
                       <button 
                         className="vote-now-btn"
-                        onClick={() => setActiveTab('vote')}
+                        onClick={() => setActiveTab(TABS.VOTE)}
                       >
                         Vote Now
                       </button>
                     )}
-                    {(activeElection.status !== 'active' || hasVoted) && (
+                    {(activeElection.status !== ELECTION_STATUS.ACTIVE || hasVoted) && (
                       <button 
                         className="view-results-btn"
-                        onClick={() => setActiveTab('results')}
+                        onClick={() => setActiveTab(TABS.RESULTS)}
                       >
                         View Results
                       </button>
@@ -482,24 +652,35 @@ const connectWallet = async () => {
                     </div>
                   )}
                   
-                  {activeElection.status === 'upcoming' && (
+                  {activeElection.status === ELECTION_STATUS.UPCOMING && (
                     <div className="upcoming-message">
                       <AlertTriangle />
                       <p>This election has not started yet</p>
                     </div>
                   )}
                   
-                  {activeElection.status === 'completed' && (
+                  {activeElection.status === ELECTION_STATUS.COMPLETED && (
                     <div className="completed-message">
                       <Info />
                       <p>This election has ended</p>
                     </div>
                   )}
                 </div>
+                ) : null
               )}
               
-              {activeTab === 'vote' && activeElection && (
+              {activeTab === TABS.VOTE && activeElection && (
                 <div className="vote-section">
+                  {/* Sybil Resistance Panel */}
+                  <SybilResistancePanel
+                    electionId={activeElection.id}
+                    election={activeElection}
+                    account={account}
+                    onVerified={() => {
+                      // Optional: update hasVoted or trigger some UI state
+                      showNotification('Verification successful. You may now vote.', NOTIFICATION_TYPES.SUCCESS);
+                    }}
+                  />
                   <h2>Cast Your Vote</h2>
                   <p className="vote-instructions">
                     Select a candidate below to cast your vote. Your vote will be anonymous thanks to zk-SNARK technology.
@@ -514,7 +695,7 @@ const connectWallet = async () => {
                         </div>
                         <button 
                           className="cast-vote-btn"
-                        onClick={() => castVote(activeElection.candidates.indexOf(candidate))}
+                          onClick={() => castVote(activeElection.candidates.indexOf(candidate))}
                           disabled={hasVoted}
                         >
                           Vote
@@ -533,15 +714,15 @@ const connectWallet = async () => {
                 </div>
               )}
               
-              {activeTab === 'results' && activeElection && (
+              {activeTab === TABS.RESULTS && activeElection && (
                 <Results election={activeElection} />
               )}
               
-              {activeTab === 'verification' && (
+              {activeTab === TABS.VERIFICATION && (
                 <ZkVerification onVerificationComplete={handleVerificationComplete} />
               )}
               
-              {activeTab === 'settings' && (
+              {activeTab === TABS.SETTINGS && (
                 <div className="settings-section">
                   <h2>Account Settings</h2>
                   
@@ -558,7 +739,7 @@ const connectWallet = async () => {
                     <div className="setting-item">
                       <span className="setting-label">Network</span>
                       <span className="setting-value">
-                        {window.ethereum.networkVersion === "31337" ? "Localhost (Hardhat)" : "Unknown Network"}
+                        {window.ethereum?.networkVersion === "31337" ? "Localhost (Hardhat)" : "Unknown Network"}
                       </span>
                     </div>
                     <button className="disconnect-btn" onClick={disconnectWallet}>
@@ -621,41 +802,33 @@ const connectWallet = async () => {
                 </div>
               )}
 
-            {activeTab === 'admin' && (
-              <AdminPanel 
-                showNotification={showNotification}
-                refreshElections={async () => {
-                  const provider = new BrowserProvider(window.ethereum);
-                  const electionsFromContract = await getAllElections(provider);
-                  const electionsWithCandidates = await Promise.all(
-                    electionsFromContract.map(async (election) => {
-                      const contract = getContract(provider);
-                      const [names, votes] = await getCandidates(contract, election.id);
-                      const candidates = names.map((name, index) => ({
-                        id: index,
-                        name,
-                        votes: typeof votes[index]?.toNumber === 'function'
-                          ? votes[index].toNumber()
-                          : Number(votes[index]) || 0,
-                        platform: ""
-                      }));
-                      const status = election.active ? 'active' : 'completed';
-                      return {
-                        ...election,
-                        candidates,
-                        totalVoters: 1000,
-                        votedCount: candidates.reduce((sum, c) => sum + c.votes, 0),
-                        startTime: new Date().toISOString(),
-                        endTime: new Date(Date.now() + 2 * 86400000).toISOString(),
-                        status
-                      };
-                    })
-                  );
-                  setElections(electionsWithCandidates);
-                  setActiveElection(electionsWithCandidates[0]);
-                }}
-              />
-            )}
+              {activeTab === TABS.ADMIN && userRole === USER_ROLES.ADMIN && (
+                <AdminPanel 
+                  showNotification={showNotification}
+                  refreshElections={async () => {
+                    const provider = new BrowserProvider(window.ethereum);
+                    const electionsFromContract = await getAllElections(provider);
+                    const electionsWithCandidates = await Promise.all(
+                      electionsFromContract.map(async (election) => {
+                        const contract = getContract(provider);
+                        const [names, votes] = await getCandidates(contract, election.id);
+                        const candidates = names.map((name, index) => ({
+                          id: index,
+                          name,
+                          votes: typeof votes[index]?.toNumber === 'function'
+                            ? votes[index].toNumber()
+                            : Number(votes[index]) || 0,
+                          platform: ""
+                        }));
+                        // const status = election.active ? ELECTION_STATUS.ACTIVE : ELECTION_STATUS.COMPLETED;
+                        return formatElectionData({ ...election }, candidates);
+                      })
+                    );
+                    setElections(electionsWithCandidates);
+                    setActiveElection(electionsWithCandidates[0]);
+                  }}
+                />
+              )}
             </div>
           </div>
         )}

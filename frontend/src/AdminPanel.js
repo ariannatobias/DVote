@@ -56,7 +56,8 @@ function AdminPanel({ showNotification, refreshElections }) {
       try {
         const contract = await getContractInstance();
         if (contract) {
-          const isActive = await contract.votingActive();
+          const [, , statuses] = await contract.getAllElections();
+          const isActive = statuses.some(status => status); // true if any election is active
           setElectionStarted(isActive);
 
           // Try to fetch candidates
@@ -102,7 +103,7 @@ function AdminPanel({ showNotification, refreshElections }) {
       const contract = await getContractInstance();
       if (!contract) return;
 
-      const tx = await contract.startElection(electionName.trim());
+      const tx = await contract.startElection(electionName, 0); // 0 = SybilResistanceMethod.None
       await tx.wait();
       showNotification('Election started successfully!', 'success');
       setElectionStarted(true);
